@@ -1,0 +1,123 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+Thumbs.db
+Desktop.ini
+
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VS Code / Cursor local settings
+.vscode/
+.cursor/
+
+
+# Flutter/Dart/Pub
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+/coverage/
+.pub-preload-cache/
+
+# Symbolication / obfuscation
+app.*.symbols
+app.*.map.json
+
+# Android build outputs & local signing
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/key.properties
+/android/**/*.keystore
+/android/**/*.jks
+/android/local.properties
+*.apk
+*.aab
+*.ap_
+
+# iOS / macOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/ServiceDefinitions.json
+**/macos/Flutter/ephemeral/
+**/macos/Pods/
+*.ipa
+*.dSYM.zip
+*.dSYM
+**/DerivedData/
+**/xcuserdata/
+*.xcuserstate
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Windows / Linux ephemeral
+**/windows/flutter/ephemeral/
+**/linux/flutter/ephemeral/
+
+# Firebase / distribution secrets (never commit)
+**/serviceAccount*.json
+**/*-firebase-adminsdk*.json
+**/google-services-private.json
+.distribution/
+distribution/apps.local.env
+.env
+.env.*
+!.env.example
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+.runtimeconfig.json
+
+# Local Noteon databases & user media (never commit)
+**/*.isar
+**/*.isar.lock
+**/*.mdb
+**/noteon_db/
+**/noteon_media/
+**/locked/
+
+# Test / temp artifacts
+.tmp/
+tmp/
+*.tmp
+*.temp
+
+# FVM
+.fvm/flutter_sdk
+.fvm/
+
+# Exceptions — keep example / public distribution config
+!distribution/apps.env
+!distribution/apps.local.env.example
+!android/key.properties.example

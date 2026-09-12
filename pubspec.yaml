@@ -1,0 +1,44 @@
+name: noteon
+description: "A simple and secure notes app that keeps your data locally on your device."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_riverpod: ^2.6.1
+  google_fonts: ^6.2.1
+  intl: any
+  isar_community: 3.3.2
+  isar_community_flutter_libs: 3.3.2
+  path_provider: ^2.1.6
+  path: ^1.9.1
+  flutter_quill: 11.5.0
+  image_picker: ^1.2.3
+  image: ^4.9.2
+  uuid: ^4.6.0
+  flutter_drawing_board: ^1.0.1+2
+  cryptography: ^2.9.0
+  cryptography_flutter: ^2.3.4
+  shared_preferences: ^2.5.5
+
+flutter:
+  uses-material-design: true
+  generate: true
+  assets:
+    - assets/branding/
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  isar_community_generator: 3.3.2
+  build_runner: ^2.15.1
+  flutter_launcher_icons: ^0.14.4

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "986236984899",
+    "project_id": "noteon-app",
+    "storage_bucket": "noteon-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:986236984899:android:9a3661d72fc7509eb23ef6",
+        "android_client_info": {
+          "package_name": "com.noteon.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCev1qI__3gY0mp4-AzGpq8iZu2DFPacsg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

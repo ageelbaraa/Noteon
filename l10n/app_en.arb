@@ -1,0 +1,153 @@
+{
+  "@@locale": "en",
+  "appName": "Noteon",
+  "appTagline": "Simple and secure notes, stored on your device",
+  "notes": "Notes",
+  "allNotes": "All notes",
+  "folders": "Folders",
+  "tags": "Tags",
+  "searchNotes": "Search notes",
+  "settings": "Settings",
+  "appearance": "Appearance",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "language": "Language",
+  "languageSystem": "System",
+  "languageEnglish": "English",
+  "languageArabic": "Arabic",
+  "about": "About",
+  "aboutDescription": "Noteon is a simple and secure notes app that keeps your data locally on your device.",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyNotesTitle": "No notes yet",
+  "emptyNotesSubtitle": "Create your first note to get started.",
+  "newNote": "New note",
+  "untitledNote": "Untitled",
+  "emptyNotePreview": "No additional text",
+  "lockedNotePreview": "Locked note",
+  "lockedNoteEditorMessage": "This note is locked. Enter the password to open it.",
+  "lockNote": "Lock note",
+  "lockNoteTitle": "Lock this note",
+  "lockNoteMessage": "Protect this note’s content with a password. Images and sketches are encrypted too.",
+  "unlockNote": "Unlock",
+  "unlockNoteTitle": "Unlock note",
+  "removePassword": "Remove password",
+  "removePasswordTitle": "Remove password",
+  "removePasswordMessage": "Enter your password to store this note without encryption on this device.",
+  "passwordLabel": "Password",
+  "confirmPasswordLabel": "Confirm password",
+  "passwordTooShort": "Use at least 4 characters.",
+  "passwordMismatch": "Passwords do not match.",
+  "incorrectPassword": "Incorrect password.",
+  "lockFailed": "Could not lock the note. Please try again.",
+  "unlockFailed": "Could not unlock the note. Please try again.",
+  "corruptLockedNote": "This locked note’s data is missing or damaged and cannot be opened.",
+  "passwordNoRecoveryWarning": "There is no password recovery. If you forget it, this note’s protected content cannot be opened.",
+  "togglePasswordVisibility": "Show or hide password",
+  "editNote": "Note",
+  "noteTitleHint": "Title",
+  "noteBodyHint": "Start writing…",
+  "deleteNoteTitle": "Delete note?",
+  "deleteNoteMessage": "This note will be permanently removed from this device.",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "retry": "Try again",
+  "notesLoadError": "Could not load notes. Please try again.",
+  "foldersLoadError": "Could not load folders. Please try again.",
+  "tagsLoadError": "Could not load tags. Please try again.",
+  "noteSaveFailed": "Could not save the note. Please try again.",
+  "noteMissing": "This note could not be found.",
+  "noteLoadFailed": "Could not open this note. Please try again.",
+  "databaseOpenErrorTitle": "Could not open local storage",
+  "databaseOpenErrorMessage": "Noteon could not start its local database on this device. Try again. If the problem continues, restart the device. Reinstalling the app will erase local notes.",
+  "databaseOpenErrorCode": "Error code: {code}",
+  "@databaseOpenErrorCode": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "databaseOpenErrorDebugLabel": "Diagnostic details (debug/profile)",
+  "closeApp": "Close app",
+  "unfiledNotes": "Unfiled",
+  "clearFilters": "Clear filters",
+  "searchFilterLabel": "Search: {query}",
+  "@searchFilterLabel": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "noMatchingNotes": "No matching notes",
+  "noMatchingNotesSubtitle": "Try a different search or clear the active filters.",
+  "dateGroupToday": "Today",
+  "dateGroupYesterday": "Yesterday",
+  "dateGroupThisWeek": "This week",
+  "dateGroupOlder": "Older",
+  "organize": "Organize",
+  "newFolder": "New folder",
+  "newSubfolder": "New subfolder",
+  "renameFolder": "Rename folder",
+  "deleteFolderTitle": "Delete folder?",
+  "deleteFolderMessage": "Notes in this folder will become unfiled. Subfolders will also be removed.",
+  "folderNameHint": "Folder name",
+  "folderActionFailed": "Could not update the folder. Please try again.",
+  "save": "Save",
+  "newTag": "New tag",
+  "renameTag": "Rename tag",
+  "deleteTagTitle": "Delete tag?",
+  "deleteTagMessage": "This tag will be removed from all notes.",
+  "tagNameHint": "Tag name",
+  "tagActionFailed": "Could not update the tag. Please try again.",
+  "tagAlreadyExists": "A tag with this name already exists.",
+  "addTag": "Add tag",
+  "noteFolder": "Folder",
+  "noteTags": "Tags",
+  "noFolder": "No folder",
+  "manageFolders": "Manage folders",
+  "manageTags": "Manage tags",
+  "filterByTag": "Tag: {name}",
+  "@filterByTag": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "filterByFolder": "Folder: {name}",
+  "@filterByFolder": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "create": "Create",
+  "rename": "Rename",
+  "emptyFolders": "No folders yet",
+  "emptyFoldersSubtitle": "Create a folder to organize your notes.",
+  "emptyTags": "No tags yet",
+  "emptyTagsSubtitle": "Create tags to label and find notes faster.",
+  "addImage": "Add image",
+  "addImageFromGallery": "Choose from gallery",
+  "addImageFromCamera": "Take a photo",
+  "imageMissing": "Image unavailable",
+  "imageImportFailed": "Could not add the image. Please try again.",
+  "imagePermissionDenied": "Photo access was denied. You can enable it in system settings.",
+  "addSketch": "Add sketch",
+  "newSketch": "Sketch",
+  "sketchEmpty": "Draw something before saving.",
+  "sketchSaveFailed": "Could not save the sketch. Please try again.",
+  "undo": "Undo",
+  "redo": "Redo",
+  "clearCanvas": "Clear"
+}
