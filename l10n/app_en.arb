@@ -164,6 +164,17 @@
   "deleteTable": "Delete table",
   "deleteTableTitle": "Delete table?",
   "deleteTableMessage": "This removes the table from the note. This cannot be undone.",
+  "editorZoomIn": "Zoom in",
+  "editorZoomOut": "Zoom out",
+  "editorZoomReset": "Reset zoom",
+  "editorZoomPercent": "{percent}%",
+  "@editorZoomPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "backupTransfer": "Backup & transfer",
   "backupExportEncrypted": "Export encrypted backup",
   "backupExportEncryptedSubtitle": "Create a password-protected .noteonbak file you can move to another phone.",

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,41 @@ import 'package:flutter_quill/flutter_quill.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/noteon_table_data.dart';
+
+/// Locates a table embed inside a Quill [Document] by its stable table id.
+abstract final class NoteonTableDocument {
+  static int? offsetOf(Document document, String tableId) {
+    var offset = 0;
+    for (final op in document.toDelta().toList()) {
+      final data = op.data;
+      if (data is Map && data[BlockEmbed.customType] is String) {
+        final raw = data[BlockEmbed.customType] as String;
+        final parsed = _parseTableId(raw);
+        if (parsed == tableId) {
+          return offset;
+        }
+      }
+      offset += op.length ?? 0;
+    }
+    return null;
+  }
+
+  static String? _parseTableId(String customRaw) {
+    try {
+      final nested = jsonDecode(customRaw);
+      if (nested is! Map) {
+        return null;
+      }
+      final tableRaw = nested['noteonTable'];
+      if (tableRaw is! String) {
+        return null;
+      }
+      return NoteonTableData.fromJsonString(tableRaw).id;
+    } catch (_) {
+      return null;
+    }
+  }
+}
 
 /// Quill custom embed type for Noteon tables.
 class NoteonTableBlockEmbed extends CustomBlockEmbed {
@@ -76,11 +112,19 @@ class NoteonTableEmbedBuilder extends EmbedBuilder {
           columns: NoteonTableData.defaultColumns,
         );
 
+    // flutter_quill unwraps `custom` embeds into a detached Embed node, so
+    // `node.documentOffset` is often 0. Resolve by stable table id instead.
+    final documentOffset = NoteonTableDocument.offsetOf(
+          embedContext.controller.document,
+          data.id,
+        ) ??
+        embedContext.node.documentOffset;
+
     return _NoteonTableView(
       key: ValueKey(data.id),
       data: data,
       readOnly: embedContext.readOnly,
-      documentOffset: embedContext.node.documentOffset,
+      documentOffset: documentOffset,
       controller: embedContext.controller,
     );
   }
@@ -207,7 +251,19 @@ class _NoteonTableViewState extends State<_NoteonTableView> {
     }
     _data = next;
     final block = BlockEmbed.custom(NoteonTableBlockEmbed.fromData(next));
-    final offset = widget.documentOffset;
+    // Never fall back to a possibly-stale documentOffset (often 0 for custom
+    // embeds). Replacing the wrong index inserts a duplicate table.
+    final offset = NoteonTableDocument.offsetOf(
+      widget.controller.document,
+      next.id,
+    );
+    if (offset == null) {
+      return;
+    }
+    final docLength = widget.controller.document.length;
+    if (offset < 0 || offset >= docLength) {
+      return;
+    }
     widget.controller.replaceText(
       offset,
       1,
@@ -221,7 +277,7 @@ class _NoteonTableViewState extends State<_NoteonTableView> {
   void _scheduleCommit(NoteonTableData next) {
     _data = next;
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 280), () {
+    _debounce = Timer(const Duration(milliseconds: 450), () {
       if (!mounted) {
         return;
       }
@@ -230,6 +286,9 @@ class _NoteonTableViewState extends State<_NoteonTableView> {
   }
 
   void _onCellChanged(int row, int column, String value) {
+    if (_data.cells[row][column] == value) {
+      return;
+    }
     _scheduleCommit(_data.copyWithCell(row, column, value));
   }
 
@@ -330,11 +389,16 @@ class _NoteonTableViewState extends State<_NoteonTableView> {
           ),
         );
         if (ok == true && mounted) {
+          final offset = NoteonTableDocument.offsetOf(
+                widget.controller.document,
+                _data.id,
+              ) ??
+              widget.documentOffset;
           widget.controller.replaceText(
-            widget.documentOffset,
+            offset,
             1,
             '',
-            TextSelection.collapsed(offset: widget.documentOffset),
+            TextSelection.collapsed(offset: offset),
           );
         }
     }
@@ -422,41 +486,45 @@ class _NoteonTableViewState extends State<_NoteonTableView> {
             const Divider(height: 1),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
+              primary: false,
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.all(8),
-              child: Table(
-                defaultColumnWidth: FixedColumnWidth(cellMinWidth),
-                border: TableBorder.all(
-                  color: borderColor,
-                  width: 1,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                children: [
-                  for (var r = 0; r < _data.rows; r++)
-                    TableRow(
-                      decoration: BoxDecoration(
-                        color: r == 0 ? headerBg : null,
+              child: RepaintBoundary(
+                child: Table(
+                  defaultColumnWidth: FixedColumnWidth(cellMinWidth),
+                  border: TableBorder.all(
+                    color: borderColor,
+                    width: 1,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  children: [
+                    for (var r = 0; r < _data.rows; r++)
+                      TableRow(
+                        decoration: BoxDecoration(
+                          color: r == 0 ? headerBg : null,
+                        ),
+                        children: [
+                          for (var c = 0; c < _data.columns; c++)
+                            _TableCellField(
+                              controller: _controllers[r][c],
+                              focusNode: _focusNodes[r][c],
+                              readOnly: widget.readOnly,
+                              isHeader: r == 0,
+                              onChanged: (value) => _onCellChanged(r, c, value),
+                              onEditingComplete: _flushCommit,
+                              onNext: () {
+                                _flushCommit();
+                                _moveFocus(r, c, forward: true);
+                              },
+                              onPrevious: () {
+                                _flushCommit();
+                                _moveFocus(r, c, forward: false);
+                              },
+                            ),
+                        ],
                       ),
-                      children: [
-                        for (var c = 0; c < _data.columns; c++)
-                          _TableCellField(
-                            controller: _controllers[r][c],
-                            focusNode: _focusNodes[r][c],
-                            readOnly: widget.readOnly,
-                            isHeader: r == 0,
-                            onChanged: (value) => _onCellChanged(r, c, value),
-                            onEditingComplete: _flushCommit,
-                            onNext: () {
-                              _flushCommit();
-                              _moveFocus(r, c, forward: true);
-                            },
-                            onPrevious: () {
-                              _flushCommit();
-                              _moveFocus(r, c, forward: false);
-                            },
-                          ),
-                      ],
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

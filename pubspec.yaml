@@ -1,7 +1,7 @@
 name: noteon
 description: "A simple and secure notes app that keeps your data locally on your device."
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.0.0+4
 
 environment:
   sdk: ^3.11.5

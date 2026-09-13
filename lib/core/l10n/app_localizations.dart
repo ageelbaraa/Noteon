@@ -872,6 +872,30 @@ abstract class AppLocalizations {
   /// **'This removes the table from the note. This cannot be undone.'**
   String get deleteTableMessage;
 
+  /// No description provided for @editorZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get editorZoomIn;
+
+  /// No description provided for @editorZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get editorZoomOut;
+
+  /// No description provided for @editorZoomReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset zoom'**
+  String get editorZoomReset;
+
+  /// No description provided for @editorZoomPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String editorZoomPercent(int percent);
+
   /// No description provided for @backupTransfer.
   ///
   /// In en, this message translates to:

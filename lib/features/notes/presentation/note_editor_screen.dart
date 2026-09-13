@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:isar_community/isar.dart';
@@ -24,6 +25,7 @@ import '../data/noteon_table_data.dart';
 import 'note_password_dialogs.dart';
 import 'noteon_image_embed.dart';
 import 'noteon_table_embed.dart';
+import 'note_editor_zoom_viewport.dart';
 import 'notes_providers.dart';
 import 'sketch_editor_screen.dart';
 
@@ -54,6 +56,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   late final QuillController _quillController;
   final _editorFocusNode = FocusNode();
   final _editorScrollController = ScrollController();
+  final _zoomViewportKey = GlobalKey<NoteEditorZoomViewportState>();
 
   Note? _note;
   bool _loading = true;
@@ -62,6 +65,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   bool _sessionUnlocked = false;
   bool _saving = false;
   bool _busyCrypto = false;
+  bool _insertingTable = false;
   Object? _loadError;
   int? _folderId;
   List<int> _tagIds = [];
@@ -564,51 +568,76 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   }
 
   void _insertImageEmbed(String relativePath) {
-    final index = _quillController.selection.isValid
-        ? _quillController.selection.baseOffset
-        : _quillController.document.length - 1;
-    final safeIndex = index.clamp(0, _quillController.document.length - 1);
-
-    _quillController.replaceText(
-      safeIndex,
-      0,
-      BlockEmbed.image(relativePath),
-      TextSelection.collapsed(offset: safeIndex + 1),
-    );
-    _quillController.replaceText(
-      safeIndex + 1,
-      0,
-      '\n',
-      TextSelection.collapsed(offset: safeIndex + 2),
-    );
+    _insertBlockEmbed(BlockEmbed.image(relativePath));
   }
 
   Future<void> _insertTable() async {
-    final table = await showInsertTableDialog(context);
-    if (table == null || !mounted) {
+    if (_insertingTable || !_canEditBody) {
       return;
     }
+    _insertingTable = true;
+    try {
+      final table = await showInsertTableDialog(context);
+      if (table == null || !mounted) {
+        return;
+      }
 
-    final index = _quillController.selection.isValid
+      NoteonTableFocus.pendingTableId = table.id;
+      _insertBlockEmbed(
+        BlockEmbed.custom(NoteonTableBlockEmbed.fromData(table)),
+      );
+      setState(() => _dirty = true);
+    } finally {
+      _insertingTable = false;
+    }
+  }
+
+  /// Inserts a block embed on its own line (mirrors Quill video heuristics).
+  ///
+  /// Avoids always appending an extra newline (which produced `\n\n`) and
+  /// prevents sharing a line with adjacent text that can confuse embed layout.
+  void _insertBlockEmbed(Embeddable embed) {
+    final document = _quillController.document;
+    var index = _quillController.selection.isValid
         ? _quillController.selection.baseOffset
-        : _quillController.document.length - 1;
-    final safeIndex = index.clamp(0, _quillController.document.length - 1);
+        : document.length - 1;
+    index = index.clamp(0, document.length - 1);
 
-    NoteonTableFocus.pendingTableId = table.id;
-    final block = BlockEmbed.custom(NoteonTableBlockEmbed.fromData(table));
+    final itr = DeltaIterator(document.toDelta());
+    final prev = index > 0 ? itr.skip(index) : null;
+    final cur = itr.next();
+    final textBefore = prev != null && prev.data is String
+        ? prev.data as String
+        : '';
+    final textAfter = cur.data is String ? cur.data as String : '';
+    final isNewlineBefore = prev == null || textBefore.endsWith('\n');
+    final isNewlineAfter = textAfter.startsWith('\n');
+
+    if (!isNewlineBefore) {
+      _quillController.replaceText(
+        index,
+        0,
+        '\n',
+        TextSelection.collapsed(offset: index + 1),
+      );
+      index += 1;
+    }
+
     _quillController.replaceText(
-      safeIndex,
+      index,
       0,
-      block,
-      TextSelection.collapsed(offset: safeIndex + 1),
+      embed,
+      TextSelection.collapsed(offset: index + 1),
     );
-    _quillController.replaceText(
-      safeIndex + 1,
-      0,
-      '\n',
-      TextSelection.collapsed(offset: safeIndex + 1),
-    );
-    setState(() => _dirty = true);
+
+    if (!isNewlineAfter) {
+      _quillController.replaceText(
+        index + 1,
+        0,
+        '\n',
+        TextSelection.collapsed(offset: index + 2),
+      );
+    }
   }
 
   Future<void> _openSketchEditor() async {
@@ -846,6 +875,19 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   ),
                 ),
               ),
+            if (_canEditBody && !_busyCrypto) ...[
+              IconButton(
+                tooltip: l10n.editorZoomOut,
+                onPressed: () =>
+                    _zoomViewportKey.currentState?.zoomOut(),
+                icon: const Icon(Icons.zoom_out),
+              ),
+              IconButton(
+                tooltip: l10n.editorZoomIn,
+                onPressed: () => _zoomViewportKey.currentState?.zoomIn(),
+                icon: const Icon(Icons.zoom_in),
+              ),
+            ],
             if (_note != null && !_busyCrypto)
               PopupMenuButton<_NoteSecurityAction>(
                 tooltip: l10n.lockNote,
@@ -1003,20 +1045,26 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           Expanded(
             child: Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 8),
-              child: QuillEditor.basic(
-                controller: _quillController,
-                focusNode: _editorFocusNode,
-                scrollController: _editorScrollController,
-                config: QuillEditorConfig(
-                  placeholder: l10n.noteBodyHint,
-                  padding: const EdgeInsets.only(bottom: 24),
-                  autoFocus: false,
-                  expands: false,
-                  scrollable: true,
-                  embedBuilders: [
-                    NoteonImageEmbedBuilder(noteId: _note?.id),
-                    const NoteonTableEmbedBuilder(),
-                  ],
+              child: NoteEditorZoomViewport(
+                key: _zoomViewportKey,
+                child: RepaintBoundary(
+                  child: QuillEditor.basic(
+                    controller: _quillController,
+                    focusNode: _editorFocusNode,
+                    scrollController: _editorScrollController,
+                    config: QuillEditorConfig(
+                      placeholder: l10n.noteBodyHint,
+                      padding: const EdgeInsets.only(bottom: 24),
+                      autoFocus: false,
+                      expands: false,
+                      scrollable: true,
+                      scrollPhysics: const ClampingScrollPhysics(),
+                      embedBuilders: [
+                        NoteonImageEmbedBuilder(noteId: _note?.id),
+                        const NoteonTableEmbedBuilder(),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

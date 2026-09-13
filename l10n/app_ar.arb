@@ -129,6 +129,17 @@
   "deleteTable": "حذف الجدول",
   "deleteTableTitle": "حذف الجدول؟",
   "deleteTableMessage": "سيُزال الجدول من الملاحظة. لا يمكن التراجع عن ذلك.",
+  "editorZoomIn": "تكبير",
+  "editorZoomOut": "تصغير",
+  "editorZoomReset": "إعادة تعيين التكبير",
+  "editorZoomPercent": "{percent}%",
+  "@editorZoomPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "backupTransfer": "النسخ الاحتياطي والنقل",
   "backupExportEncrypted": "تصدير نسخة مشفّرة",
   "backupExportEncryptedSubtitle": "أنشئ ملف .noteonbak محمياً بكلمة مرور لنقله إلى هاتف آخر.",

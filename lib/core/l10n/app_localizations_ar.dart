@@ -418,6 +418,20 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيُزال الجدول من الملاحظة. لا يمكن التراجع عن ذلك.';
 
   @override
+  String get editorZoomIn => 'تكبير';
+
+  @override
+  String get editorZoomOut => 'تصغير';
+
+  @override
+  String get editorZoomReset => 'إعادة تعيين التكبير';
+
+  @override
+  String editorZoomPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
   String get backupTransfer => 'النسخ الاحتياطي والنقل';
 
   @override

@@ -421,6 +421,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'This removes the table from the note. This cannot be undone.';
 
   @override
+  String get editorZoomIn => 'Zoom in';
+
+  @override
+  String get editorZoomOut => 'Zoom out';
+
+  @override
+  String get editorZoomReset => 'Reset zoom';
+
+  @override
+  String editorZoomPercent(int percent) {
+    return '$percent%';
+  }
+
+  @override
   String get backupTransfer => 'Backup & transfer';
 
   @override
