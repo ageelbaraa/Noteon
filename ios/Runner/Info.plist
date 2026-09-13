@@ -48,7 +48,14 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Noteon needs camera access to add photos to your notes. / يحتاج Noteon إلى الكاميرا لإضافة صور إلى ملاحظاتك.</string>
+	<string>Noteon needs camera access to add photos to your notes and to scan QR codes for nearby backup transfer. / يحتاج Noteon إلى الكاميرا لإضافة صور إلى ملاحظاتك ولمسح رموز QR لنقل النسخ الاحتياطية.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Noteon uses the local network to send encrypted backups to a nearby phone on the same Wi‑Fi. / يستخدم Noteon الشبكة المحلية لإرسال نسخ احتياطية مشفّرة إلى هاتف قريب على نفس شبكة Wi‑Fi.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Noteon needs photo library access to insert images into your notes. / يحتاج Noteon إلى مكتبة الصور لإدراج صور في ملاحظاتك.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

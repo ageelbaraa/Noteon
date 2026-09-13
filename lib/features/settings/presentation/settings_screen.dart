@@ -9,6 +9,7 @@ import '../../../shared/widgets/noteon_background.dart';
 import '../../../shared/widgets/noteon_group_surface.dart';
 import '../../../shared/widgets/noteon_logo.dart';
 import '../../../shared/widgets/noteon_section_header.dart';
+import '../../transfer/presentation/backup_transfer_actions.dart';
 
 /// Theme, language, and about — preferences persist locally.
 class SettingsScreen extends ConsumerWidget {
@@ -44,29 +45,38 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-                  child: SegmentedButton<AppThemeMode>(
-                    segments: [
-                      ButtonSegment(
-                        value: AppThemeMode.system,
-                        label: Text(l10n.themeSystem),
-                        icon: const Icon(Icons.brightness_auto_outlined),
-                      ),
-                      ButtonSegment(
-                        value: AppThemeMode.light,
-                        label: Text(l10n.themeLight),
-                        icon: const Icon(Icons.light_mode_outlined),
-                      ),
-                      ButtonSegment(
-                        value: AppThemeMode.dark,
-                        label: Text(l10n.themeDark),
-                        icon: const Icon(Icons.dark_mode_outlined),
-                      ),
-                    ],
-                    selected: {themeMode},
-                    onSelectionChanged: (value) {
-                      ref
-                          .read(themeModeProvider.notifier)
-                          .setMode(value.first);
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 340;
+                      return SegmentedButton<AppThemeMode>(
+                        showSelectedIcon: false,
+                        segments: [
+                          ButtonSegment(
+                            value: AppThemeMode.system,
+                            label: compact ? null : Text(l10n.themeSystem),
+                            icon: const Icon(Icons.brightness_auto_outlined),
+                            tooltip: l10n.themeSystem,
+                          ),
+                          ButtonSegment(
+                            value: AppThemeMode.light,
+                            label: compact ? null : Text(l10n.themeLight),
+                            icon: const Icon(Icons.light_mode_outlined),
+                            tooltip: l10n.themeLight,
+                          ),
+                          ButtonSegment(
+                            value: AppThemeMode.dark,
+                            label: compact ? null : Text(l10n.themeDark),
+                            icon: const Icon(Icons.dark_mode_outlined),
+                            tooltip: l10n.themeDark,
+                          ),
+                        ],
+                        selected: {themeMode},
+                        onSelectionChanged: (value) {
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setMode(value.first);
+                        },
+                      );
                     },
                   ),
                 ),
@@ -80,31 +90,84 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
-                  child: SegmentedButton<String>(
-                    segments: [
-                      ButtonSegment(
-                        value: 'system',
-                        label: Text(l10n.languageSystem),
-                      ),
-                      ButtonSegment(
-                        value: 'en',
-                        label: Text(l10n.languageEnglish),
-                      ),
-                      ButtonSegment(
-                        value: 'ar',
-                        label: Text(l10n.languageArabic),
-                      ),
-                    ],
-                    selected: {
-                      locale == null ? 'system' : locale.languageCode,
-                    },
-                    onSelectionChanged: (value) {
-                      final code = value.first;
-                      ref.read(localeProvider.notifier).setLocale(
-                            code == 'system' ? null : Locale(code),
-                          );
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 340;
+                      final button = SegmentedButton<String>(
+                        showSelectedIcon: false,
+                        segments: [
+                          ButtonSegment(
+                            value: 'system',
+                            label: Text(l10n.languageSystem),
+                            tooltip: l10n.languageSystem,
+                          ),
+                          ButtonSegment(
+                            value: 'en',
+                            label: Text(l10n.languageEnglish),
+                            tooltip: l10n.languageEnglish,
+                          ),
+                          ButtonSegment(
+                            value: 'ar',
+                            label: Text(l10n.languageArabic),
+                            tooltip: l10n.languageArabic,
+                          ),
+                        ],
+                        selected: {
+                          locale == null ? 'system' : locale.languageCode,
+                        },
+                        onSelectionChanged: (value) {
+                          final code = value.first;
+                          ref.read(localeProvider.notifier).setLocale(
+                                code == 'system' ? null : Locale(code),
+                              );
+                        },
+                      );
+                      if (!compact) {
+                        return button;
+                      }
+                      return FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: AlignmentDirectional.centerStart,
+                        child: SizedBox(width: 340, child: button),
+                      );
                     },
                   ),
+                ),
+              ],
+            ),
+            NoteonSectionHeader(
+              title: l10n.backupTransfer,
+              padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
+            ),
+            NoteonGroupSurface(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.upload_file_outlined),
+                  title: Text(l10n.backupExportEncrypted),
+                  subtitle: Text(l10n.backupExportEncryptedSubtitle),
+                  onTap: () => BackupTransferActions.exportBackup(context, ref),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.download_outlined),
+                  title: Text(l10n.backupImportEncrypted),
+                  subtitle: Text(l10n.backupImportEncryptedSubtitle),
+                  onTap: () => BackupTransferActions.importBackup(context, ref),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.qr_code_2_outlined),
+                  title: Text(l10n.nearbySendTitle),
+                  subtitle: Text(l10n.nearbySendSubtitle),
+                  onTap: () => BackupTransferActions.sendNearby(context, ref),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.qr_code_scanner_outlined),
+                  title: Text(l10n.nearbyReceiveTitle),
+                  subtitle: Text(l10n.nearbyReceiveSubtitle),
+                  onTap: () =>
+                      BackupTransferActions.receiveNearby(context, ref),
                 ),
               ],
             ),

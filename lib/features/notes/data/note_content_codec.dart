@@ -34,14 +34,20 @@ abstract final class NoteContentCodec {
   /// Plain-text preview for list rows. Empty when there is no visible text.
   static String plainTextPreview(String contentJson, {int maxLength = 120}) {
     try {
-      final text = documentFromJson(contentJson).toPlainText().trim();
-      if (text.isEmpty) {
+      final body = documentFromJson(contentJson).toPlainText().trim();
+      final tables = _tablePlainText(contentJson).trim();
+      final combined = [body, tables]
+          .where((part) => part.isNotEmpty)
+          .join(' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim();
+      if (combined.isEmpty) {
         return '';
       }
-      if (text.length <= maxLength) {
-        return text;
+      if (combined.length <= maxLength) {
+        return combined;
       }
-      return '${text.substring(0, maxLength).trimRight()}…';
+      return '${combined.substring(0, maxLength).trimRight()}…';
     } catch (_) {
       return '';
     }
@@ -55,6 +61,76 @@ abstract final class NoteContentCodec {
     final hasTitle = title.trim().isNotEmpty;
     final hasBody = plainTextPreview(contentJson).isNotEmpty;
     final hasImages = contentJson.contains('"image"');
-    return !hasTitle && !hasBody && !hasImages;
+    final hasTables = contentJson.contains('"noteonTable"');
+    return !hasTitle && !hasBody && !hasImages && !hasTables;
+  }
+
+  static String _tablePlainText(String contentJson) {
+    if (!contentJson.contains('noteonTable')) {
+      return '';
+    }
+    try {
+      final decoded = jsonDecode(contentJson);
+      if (decoded is! List) {
+        return '';
+      }
+      final parts = <String>[];
+      for (final op in decoded) {
+        if (op is! Map) {
+          continue;
+        }
+        final insert = op['insert'];
+        if (insert is! Map) {
+          continue;
+        }
+        if (insert['noteonTable'] is String) {
+          parts.add(_cellsPlain(insert['noteonTable'] as String));
+        } else if (insert['custom'] is String) {
+          final customRaw = insert['custom'] as String;
+          if (!customRaw.contains('noteonTable')) {
+            continue;
+          }
+          try {
+            final nested = jsonDecode(customRaw);
+            if (nested is Map && nested['noteonTable'] is String) {
+              parts.add(_cellsPlain(nested['noteonTable'] as String));
+            }
+          } catch (_) {
+            // Ignore malformed custom embeds.
+          }
+        }
+      }
+      return parts.where((p) => p.isNotEmpty).join(' ');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  static String _cellsPlain(String tableJson) {
+    try {
+      final decoded = jsonDecode(tableJson);
+      if (decoded is! Map) {
+        return '';
+      }
+      final cells = decoded['cells'];
+      if (cells is! List) {
+        return '';
+      }
+      final parts = <String>[];
+      for (final row in cells) {
+        if (row is! List) {
+          continue;
+        }
+        for (final cell in row) {
+          final text = '$cell'.trim();
+          if (text.isNotEmpty) {
+            parts.add(text);
+          }
+        }
+      }
+      return parts.join(' ');
+    } catch (_) {
+      return '';
+    }
   }
 }

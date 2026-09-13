@@ -73,12 +73,22 @@ class NoteCryptoService {
   Future<SecretKey> deriveKey({
     required String password,
     required List<int> salt,
+    int? iterations,
   }) {
-    return _pbkdf2.deriveKeyFromPassword(
+    final pbkdf2 = (iterations == null ||
+            iterations == _config.pbkdf2Iterations)
+        ? _pbkdf2
+        : Pbkdf2.hmacSha256(
+            iterations: iterations,
+            bits: _config.keyBits,
+          );
+    return pbkdf2.deriveKeyFromPassword(
       password: password,
       nonce: salt,
     );
   }
+
+  int get pbkdf2Iterations => _config.pbkdf2Iterations;
 
   Future<Uint8List> createPasswordVerifier(SecretKey key) async {
     final mac = await _hmac.calculateMac(

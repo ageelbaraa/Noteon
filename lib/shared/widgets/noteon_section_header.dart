@@ -30,6 +30,8 @@ class NoteonSectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.4,
@@ -37,7 +39,13 @@ class NoteonSectionHeader extends StatelessWidget {
               ),
             ),
           ),
-          ?trailing,
+          if (trailing != null)
+            Flexible(
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: trailing,
+              ),
+            ),
         ],
       ),
     );

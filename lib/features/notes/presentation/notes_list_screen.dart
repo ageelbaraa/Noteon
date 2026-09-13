@@ -101,7 +101,6 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
       backgroundColor: Colors.transparent,
       drawer: const NotesOrganizeDrawer(),
       appBar: AppBar(
-        titleSpacing: 0,
         title: Text(
           l10n.appName,
           style: theme.textTheme.titleLarge?.copyWith(

@@ -170,6 +170,24 @@ class MediaStorageService {
     }
   }
 
+  /// Deletes every file under the media root (used by replace-import).
+  Future<void> clearAllMedia() async {
+    final root = await mediaRoot();
+    if (await root.exists()) {
+      await root.delete(recursive: true);
+    }
+    await root.create(recursive: true);
+  }
+
+  /// Reads bytes for a relative path, or null when missing.
+  Future<Uint8List?> readBytesAtRelativePath(String relativePath) async {
+    final file = await fileFor(relativePath);
+    if (file == null) {
+      return null;
+    }
+    return file.readAsBytes();
+  }
+
   /// Removes files that are no longer referenced and builds the updated list.
   Future<List<MediaRef>> reconcile({
     required List<MediaRef> previous,

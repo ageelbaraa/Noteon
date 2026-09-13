@@ -20,8 +20,10 @@ import '../data/note.dart';
 import '../data/note_content_codec.dart';
 import '../data/note_lock_service.dart';
 import '../data/note_media_paths.dart';
+import '../data/noteon_table_data.dart';
 import 'note_password_dialogs.dart';
 import 'noteon_image_embed.dart';
+import 'noteon_table_embed.dart';
 import 'notes_providers.dart';
 import 'sketch_editor_screen.dart';
 
@@ -581,6 +583,34 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     );
   }
 
+  Future<void> _insertTable() async {
+    final table = await showInsertTableDialog(context);
+    if (table == null || !mounted) {
+      return;
+    }
+
+    final index = _quillController.selection.isValid
+        ? _quillController.selection.baseOffset
+        : _quillController.document.length - 1;
+    final safeIndex = index.clamp(0, _quillController.document.length - 1);
+
+    NoteonTableFocus.pendingTableId = table.id;
+    final block = BlockEmbed.custom(NoteonTableBlockEmbed.fromData(table));
+    _quillController.replaceText(
+      safeIndex,
+      0,
+      block,
+      TextSelection.collapsed(offset: safeIndex + 1),
+    );
+    _quillController.replaceText(
+      safeIndex + 1,
+      0,
+      '\n',
+      TextSelection.collapsed(offset: safeIndex + 1),
+    );
+    setState(() => _dirty = true);
+  }
+
   Future<void> _openSketchEditor() async {
     final l10n = AppLocalizations.of(context);
     try {
@@ -775,6 +805,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       },
       child: Scaffold(
         backgroundColor: theme.colorScheme.surface,
+        resizeToAvoidBottomInset: true,
         appBar: AppBar(
           leading: IconButton(
             icon: const BackButtonIcon(),
@@ -788,15 +819,18 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           ),
           actions: [
             if (_dirty && !_busyCrypto)
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 4),
-                child: Center(
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.teal,
-                      shape: BoxShape.circle,
+              Tooltip(
+                message: l10n.editNote,
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 8),
+                  child: Center(
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.teal,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 ),
@@ -897,7 +931,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+          padding: const EdgeInsetsDirectional.fromSTEB(20, 8, 20, 0),
           child: TextField(
             controller: _titleController,
             style: theme.textTheme.headlineSmall?.copyWith(
@@ -917,10 +951,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               counterText: '',
             ),
             textCapitalization: TextCapitalization.sentences,
+            textInputAction: TextInputAction.next,
+            onSubmitted: (_) => _editorFocusNode.requestFocus(),
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 16, 8),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -964,15 +1000,37 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             ),
           )
         else ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.surfaceDarkElevated
-                    : AppColors.surfaceLightAlt,
-                borderRadius: AppRadii.control,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(20, 4, 20, 8),
+              child: QuillEditor.basic(
+                controller: _quillController,
+                focusNode: _editorFocusNode,
+                scrollController: _editorScrollController,
+                config: QuillEditorConfig(
+                  placeholder: l10n.noteBodyHint,
+                  padding: const EdgeInsets.only(bottom: 24),
+                  autoFocus: false,
+                  expands: false,
+                  scrollable: true,
+                  embedBuilders: [
+                    NoteonImageEmbedBuilder(noteId: _note?.id),
+                    const NoteonTableEmbedBuilder(),
+                  ],
+                ),
               ),
+            ),
+          ),
+          // Toolbar sits above the keyboard when the scaffold resizes.
+          // QuillSimpleToolbar (multiRowsDisplay: false) uses an internal
+          // Expanded scroll list and requires a bounded width — do not wrap
+          // it in a horizontal SingleChildScrollView or the buttons vanish.
+          Material(
+            color: isDark
+                ? AppColors.surfaceDarkElevated
+                : AppColors.surfaceLightAlt,
+            child: Padding(
+              padding: const EdgeInsetsDirectional.fromSTEB(4, 2, 4, 2),
               child: Row(
                 children: [
                   Expanded(
@@ -1017,25 +1075,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                     onPressed: _canEditBody ? _openSketchEditor : null,
                     icon: const Icon(Icons.brush_outlined),
                   ),
+                  IconButton(
+                    tooltip: l10n.insertTable,
+                    onPressed: _canEditBody ? _insertTable : null,
+                    icon: const Icon(Icons.table_chart_outlined),
+                  ),
                 ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: QuillEditor.basic(
-                controller: _quillController,
-                focusNode: _editorFocusNode,
-                scrollController: _editorScrollController,
-                config: QuillEditorConfig(
-                  placeholder: l10n.noteBodyHint,
-                  padding: const EdgeInsets.only(bottom: 48),
-                  autoFocus: _isNewDraft,
-                  embedBuilders: [
-                    NoteonImageEmbedBuilder(noteId: _note?.id),
-                  ],
-                ),
               ),
             ),
           ),

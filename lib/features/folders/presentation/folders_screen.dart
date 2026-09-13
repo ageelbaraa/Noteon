@@ -169,9 +169,8 @@ class _FolderRow extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsetsDirectional.only(start: depth * 16.0),
-      child: NoteonGroupTile(
+    return NoteonGroupTile(
+      indent: depth,
       leading: Icon(
         depth == 0 ? Icons.folder_rounded : Icons.folder_open_outlined,
       ),
@@ -254,7 +253,6 @@ class _FolderRow extends ConsumerWidget {
           color: theme.colorScheme.onSurfaceVariant,
         ),
       ),
-    ),
     );
   }
 }

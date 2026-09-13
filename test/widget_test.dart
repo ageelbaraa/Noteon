@@ -46,7 +46,30 @@ void main() {
     expect(find.text('Settings'), findsWidgets);
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('Language'), findsOneWidget);
+    expect(find.text('Backup & transfer'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Send to nearby device'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pump();
+    expect(find.text('Send to nearby device'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('About'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pump();
     expect(find.text('About'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.textContaining('Version'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pump();
     expect(find.textContaining('Version'), findsOneWidget);
   });
 

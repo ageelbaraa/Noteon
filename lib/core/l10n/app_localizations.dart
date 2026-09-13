@@ -787,6 +787,474 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get clearCanvas;
+
+  /// No description provided for @insertTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert table'**
+  String get insertTable;
+
+  /// No description provided for @insertTableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert table'**
+  String get insertTableTitle;
+
+  /// No description provided for @insertTableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how many rows and columns to start with.'**
+  String get insertTableMessage;
+
+  /// No description provided for @tableRows.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows'**
+  String get tableRows;
+
+  /// No description provided for @tableColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get tableColumns;
+
+  /// No description provided for @tableLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Table'**
+  String get tableLabel;
+
+  /// No description provided for @tableActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Table actions'**
+  String get tableActions;
+
+  /// No description provided for @tableAddRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Add row'**
+  String get tableAddRow;
+
+  /// No description provided for @tableRemoveRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove row'**
+  String get tableRemoveRow;
+
+  /// No description provided for @tableAddColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Add column'**
+  String get tableAddColumn;
+
+  /// No description provided for @tableRemoveColumn.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove column'**
+  String get tableRemoveColumn;
+
+  /// No description provided for @deleteTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete table'**
+  String get deleteTable;
+
+  /// No description provided for @deleteTableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete table?'**
+  String get deleteTableTitle;
+
+  /// No description provided for @deleteTableMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the table from the note. This cannot be undone.'**
+  String get deleteTableMessage;
+
+  /// No description provided for @backupTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup & transfer'**
+  String get backupTransfer;
+
+  /// No description provided for @backupExportEncrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'Export encrypted backup'**
+  String get backupExportEncrypted;
+
+  /// No description provided for @backupExportEncryptedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a password-protected .noteonbak file you can move to another phone.'**
+  String get backupExportEncryptedSubtitle;
+
+  /// No description provided for @backupImportEncrypted.
+  ///
+  /// In en, this message translates to:
+  /// **'Import encrypted backup'**
+  String get backupImportEncrypted;
+
+  /// No description provided for @backupImportEncryptedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore notes from a .noteonbak file.'**
+  String get backupImportEncryptedSubtitle;
+
+  /// No description provided for @backupExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export backup'**
+  String get backupExportTitle;
+
+  /// No description provided for @backupExportMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a passphrase to encrypt this backup. Locked notes stay locked and keep their own passwords.'**
+  String get backupExportMessage;
+
+  /// No description provided for @backupPassphraseNoRecoveryWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no passphrase recovery. If you forget it, this backup cannot be opened.'**
+  String get backupPassphraseNoRecoveryWarning;
+
+  /// No description provided for @backupPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup passphrase'**
+  String get backupPassphraseLabel;
+
+  /// No description provided for @backupExportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get backupExportAction;
+
+  /// No description provided for @backupExportProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating encrypted backup…'**
+  String get backupExportProgress;
+
+  /// No description provided for @backupExportReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup ready to share.'**
+  String get backupExportReady;
+
+  /// No description provided for @backupExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create the backup. Please try again.'**
+  String get backupExportFailed;
+
+  /// No description provided for @backupShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Noteon backup'**
+  String get backupShareSubject;
+
+  /// No description provided for @backupImportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import backup'**
+  String get backupImportTitle;
+
+  /// No description provided for @backupImportPassphraseMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the passphrase used when this backup was created.'**
+  String get backupImportPassphraseMessage;
+
+  /// No description provided for @backupImportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get backupImportAction;
+
+  /// No description provided for @backupImportProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing backup…'**
+  String get backupImportProgress;
+
+  /// No description provided for @backupImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import the backup. Please try again.'**
+  String get backupImportFailed;
+
+  /// No description provided for @backupIncorrectPassphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Incorrect backup passphrase.'**
+  String get backupIncorrectPassphrase;
+
+  /// No description provided for @backupCorruptFile.
+  ///
+  /// In en, this message translates to:
+  /// **'This backup file is missing, damaged, or not a Noteon backup.'**
+  String get backupCorruptFile;
+
+  /// No description provided for @backupImportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported {count} notes.'**
+  String backupImportSuccess(int count);
+
+  /// No description provided for @backupImportModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How should notes be imported?'**
+  String get backupImportModeTitle;
+
+  /// No description provided for @backupImportModeMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge keeps your current notes. Replace deletes everything on this device first.'**
+  String get backupImportModeMessage;
+
+  /// No description provided for @backupImportModeMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge'**
+  String get backupImportModeMerge;
+
+  /// No description provided for @backupImportModeMergeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add backup notes alongside existing ones.'**
+  String get backupImportModeMergeSubtitle;
+
+  /// No description provided for @backupImportModeReplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace library'**
+  String get backupImportModeReplace;
+
+  /// No description provided for @backupImportModeReplaceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete all local notes, folders, and tags, then restore the backup.'**
+  String get backupImportModeReplaceSubtitle;
+
+  /// No description provided for @backupReplaceConfirmWord.
+  ///
+  /// In en, this message translates to:
+  /// **'REPLACE'**
+  String get backupReplaceConfirmWord;
+
+  /// No description provided for @backupReplaceConfirmPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type {word} to confirm replacing everything on this device.'**
+  String backupReplaceConfirmPrompt(String word);
+
+  /// No description provided for @backupReplaceConfirmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation'**
+  String get backupReplaceConfirmLabel;
+
+  /// No description provided for @backupReplaceConfirmMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation text does not match.'**
+  String get backupReplaceConfirmMismatch;
+
+  /// No description provided for @nearbySendTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to nearby device'**
+  String get nearbySendTitle;
+
+  /// No description provided for @nearbySendSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show a QR code so another phone on the same Wi‑Fi can receive this backup.'**
+  String get nearbySendSubtitle;
+
+  /// No description provided for @nearbyReceiveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive from nearby device'**
+  String get nearbyReceiveTitle;
+
+  /// No description provided for @nearbyReceiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan the sender’s QR code, confirm the code, then import.'**
+  String get nearbyReceiveSubtitle;
+
+  /// No description provided for @nearbySendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this screen open. Both phones must be on the same Wi‑Fi network.'**
+  String get nearbySendMessage;
+
+  /// No description provided for @nearbyPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing encrypted backup…'**
+  String get nearbyPreparing;
+
+  /// No description provided for @nearbyWaitingReceiver.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the other phone to scan and download…'**
+  String get nearbyWaitingReceiver;
+
+  /// No description provided for @nearbyTransferring.
+  ///
+  /// In en, this message translates to:
+  /// **'Receiver is downloading the backup…'**
+  String get nearbyTransferring;
+
+  /// No description provided for @nearbySendComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfer finished on this phone.'**
+  String get nearbySendComplete;
+
+  /// No description provided for @nearbyMarkComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get nearbyMarkComplete;
+
+  /// No description provided for @nearbyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get nearbyDone;
+
+  /// No description provided for @nearbySendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start nearby transfer. Check Wi‑Fi and try again.'**
+  String get nearbySendFailed;
+
+  /// No description provided for @nearbyNoWifiAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not find a local Wi‑Fi address. Connect both phones to the same network and try again.'**
+  String get nearbyNoWifiAddress;
+
+  /// No description provided for @nearbyReceiveScanMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Point the camera at the QR code on the sender’s phone.'**
+  String get nearbyReceiveScanMessage;
+
+  /// No description provided for @nearbyConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Make sure this code matches the one on the sender’s phone before downloading.'**
+  String get nearbyConfirmMessage;
+
+  /// No description provided for @nearbyVerifyCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification code'**
+  String get nearbyVerifyCodeLabel;
+
+  /// No description provided for @nearbyVerifyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare this code on both phones.'**
+  String get nearbyVerifyHint;
+
+  /// No description provided for @nearbyCodesMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Codes match — download'**
+  String get nearbyCodesMatch;
+
+  /// No description provided for @nearbyRescan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan again'**
+  String get nearbyRescan;
+
+  /// No description provided for @nearbyDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading encrypted backup…'**
+  String get nearbyDownloading;
+
+  /// No description provided for @nearbyReceiveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not download the backup. Stay on the same Wi‑Fi and try again.'**
+  String get nearbyReceiveFailed;
+
+  /// No description provided for @nearbyMethodQr.
+  ///
+  /// In en, this message translates to:
+  /// **'QR code'**
+  String get nearbyMethodQr;
+
+  /// No description provided for @nearbyMethodNfc.
+  ///
+  /// In en, this message translates to:
+  /// **'NFC'**
+  String get nearbyMethodNfc;
+
+  /// No description provided for @nearbyReceiveNfcMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold this phone near the NFC tag the sender wrote. QR still works if you prefer.'**
+  String get nearbyReceiveNfcMessage;
+
+  /// No description provided for @nearbyNfcWriteAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Write pairing to NFC tag'**
+  String get nearbyNfcWriteAction;
+
+  /// No description provided for @nearbyNfcWriteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold an NFC tag to the back of this phone…'**
+  String get nearbyNfcWriteHint;
+
+  /// No description provided for @nearbyNfcWriteSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing written to NFC tag.'**
+  String get nearbyNfcWriteSuccess;
+
+  /// No description provided for @nearbyNfcWriteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not write the NFC tag. Try again or use the QR code.'**
+  String get nearbyNfcWriteFailed;
+
+  /// No description provided for @nearbyNfcCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel NFC'**
+  String get nearbyNfcCancel;
+
+  /// No description provided for @nearbyNfcListening.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready — hold near the sender’s NFC tag…'**
+  String get nearbyNfcListening;
+
+  /// No description provided for @nearbyNfcReadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read a Noteon pairing tag. Try again or use QR.'**
+  String get nearbyNfcReadFailed;
+
+  /// No description provided for @nearbyNfcRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try NFC again'**
+  String get nearbyNfcRetry;
 }
 
 class _AppLocalizationsDelegate

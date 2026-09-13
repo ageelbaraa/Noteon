@@ -61,6 +61,7 @@ class NoteonGroupTile extends StatelessWidget {
     this.trailing,
     this.onTap,
     this.selected = false,
+    this.indent = 0,
   });
 
   final String title;
@@ -69,6 +70,9 @@ class NoteonGroupTile extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
   final bool selected;
+
+  /// Nesting depth for hierarchical rows (e.g. subfolders).
+  final int indent;
 
   @override
   Widget build(BuildContext context) {
@@ -83,9 +87,11 @@ class NoteonGroupTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.md,
+          padding: EdgeInsetsDirectional.only(
+            start: AppSpacing.lg + (indent * 16),
+            end: AppSpacing.lg,
+            top: AppSpacing.md,
+            bottom: AppSpacing.md,
           ),
           child: Row(
             children: [

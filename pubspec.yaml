@@ -1,7 +1,7 @@
 name: noteon
 description: "A simple and secure notes app that keeps your data locally on your device."
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.11.5
@@ -28,6 +28,13 @@ dependencies:
   cryptography: ^2.9.0
   cryptography_flutter: ^2.3.4
   shared_preferences: ^2.5.5
+  archive: ^4.2.0
+  share_plus: ^12.0.2
+  file_picker: ^11.0.3
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.4.1
+  nfc_manager: ^4.2.1
+  nfc_manager_ndef: ^1.1.0
 
 flutter:
   uses-material-design: true

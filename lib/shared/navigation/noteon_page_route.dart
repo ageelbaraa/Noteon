@@ -16,8 +16,10 @@ class NoteonPageRoute<T> extends PageRouteBuilder<T> {
               curve: AppMotion.standard,
               reverseCurve: Curves.easeInCubic,
             );
+            final isRtl = Directionality.of(context) == TextDirection.rtl;
+            final beginDx = isRtl ? -0.04 : 0.04;
             final offset = Tween<Offset>(
-              begin: const Offset(0.04, 0),
+              begin: Offset(beginDx, 0),
               end: Offset.zero,
             ).animate(curved);
             return FadeTransition(

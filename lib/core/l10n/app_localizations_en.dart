@@ -375,4 +375,268 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clearCanvas => 'Clear';
+
+  @override
+  String get insertTable => 'Insert table';
+
+  @override
+  String get insertTableTitle => 'Insert table';
+
+  @override
+  String get insertTableMessage =>
+      'Choose how many rows and columns to start with.';
+
+  @override
+  String get tableRows => 'Rows';
+
+  @override
+  String get tableColumns => 'Columns';
+
+  @override
+  String get tableLabel => 'Table';
+
+  @override
+  String get tableActions => 'Table actions';
+
+  @override
+  String get tableAddRow => 'Add row';
+
+  @override
+  String get tableRemoveRow => 'Remove row';
+
+  @override
+  String get tableAddColumn => 'Add column';
+
+  @override
+  String get tableRemoveColumn => 'Remove column';
+
+  @override
+  String get deleteTable => 'Delete table';
+
+  @override
+  String get deleteTableTitle => 'Delete table?';
+
+  @override
+  String get deleteTableMessage =>
+      'This removes the table from the note. This cannot be undone.';
+
+  @override
+  String get backupTransfer => 'Backup & transfer';
+
+  @override
+  String get backupExportEncrypted => 'Export encrypted backup';
+
+  @override
+  String get backupExportEncryptedSubtitle =>
+      'Create a password-protected .noteonbak file you can move to another phone.';
+
+  @override
+  String get backupImportEncrypted => 'Import encrypted backup';
+
+  @override
+  String get backupImportEncryptedSubtitle =>
+      'Restore notes from a .noteonbak file.';
+
+  @override
+  String get backupExportTitle => 'Export backup';
+
+  @override
+  String get backupExportMessage =>
+      'Choose a passphrase to encrypt this backup. Locked notes stay locked and keep their own passwords.';
+
+  @override
+  String get backupPassphraseNoRecoveryWarning =>
+      'There is no passphrase recovery. If you forget it, this backup cannot be opened.';
+
+  @override
+  String get backupPassphraseLabel => 'Backup passphrase';
+
+  @override
+  String get backupExportAction => 'Export';
+
+  @override
+  String get backupExportProgress => 'Creating encrypted backup…';
+
+  @override
+  String get backupExportReady => 'Backup ready to share.';
+
+  @override
+  String get backupExportFailed =>
+      'Could not create the backup. Please try again.';
+
+  @override
+  String get backupShareSubject => 'Noteon backup';
+
+  @override
+  String get backupImportTitle => 'Import backup';
+
+  @override
+  String get backupImportPassphraseMessage =>
+      'Enter the passphrase used when this backup was created.';
+
+  @override
+  String get backupImportAction => 'Import';
+
+  @override
+  String get backupImportProgress => 'Importing backup…';
+
+  @override
+  String get backupImportFailed =>
+      'Could not import the backup. Please try again.';
+
+  @override
+  String get backupIncorrectPassphrase => 'Incorrect backup passphrase.';
+
+  @override
+  String get backupCorruptFile =>
+      'This backup file is missing, damaged, or not a Noteon backup.';
+
+  @override
+  String backupImportSuccess(int count) {
+    return 'Imported $count notes.';
+  }
+
+  @override
+  String get backupImportModeTitle => 'How should notes be imported?';
+
+  @override
+  String get backupImportModeMessage =>
+      'Merge keeps your current notes. Replace deletes everything on this device first.';
+
+  @override
+  String get backupImportModeMerge => 'Merge';
+
+  @override
+  String get backupImportModeMergeSubtitle =>
+      'Add backup notes alongside existing ones.';
+
+  @override
+  String get backupImportModeReplace => 'Replace library';
+
+  @override
+  String get backupImportModeReplaceSubtitle =>
+      'Delete all local notes, folders, and tags, then restore the backup.';
+
+  @override
+  String get backupReplaceConfirmWord => 'REPLACE';
+
+  @override
+  String backupReplaceConfirmPrompt(String word) {
+    return 'Type $word to confirm replacing everything on this device.';
+  }
+
+  @override
+  String get backupReplaceConfirmLabel => 'Confirmation';
+
+  @override
+  String get backupReplaceConfirmMismatch =>
+      'Confirmation text does not match.';
+
+  @override
+  String get nearbySendTitle => 'Send to nearby device';
+
+  @override
+  String get nearbySendSubtitle =>
+      'Show a QR code so another phone on the same Wi‑Fi can receive this backup.';
+
+  @override
+  String get nearbyReceiveTitle => 'Receive from nearby device';
+
+  @override
+  String get nearbyReceiveSubtitle =>
+      'Scan the sender’s QR code, confirm the code, then import.';
+
+  @override
+  String get nearbySendMessage =>
+      'Keep this screen open. Both phones must be on the same Wi‑Fi network.';
+
+  @override
+  String get nearbyPreparing => 'Preparing encrypted backup…';
+
+  @override
+  String get nearbyWaitingReceiver =>
+      'Waiting for the other phone to scan and download…';
+
+  @override
+  String get nearbyTransferring => 'Receiver is downloading the backup…';
+
+  @override
+  String get nearbySendComplete => 'Transfer finished on this phone.';
+
+  @override
+  String get nearbyMarkComplete => 'Done';
+
+  @override
+  String get nearbyDone => 'Close';
+
+  @override
+  String get nearbySendFailed =>
+      'Could not start nearby transfer. Check Wi‑Fi and try again.';
+
+  @override
+  String get nearbyNoWifiAddress =>
+      'Could not find a local Wi‑Fi address. Connect both phones to the same network and try again.';
+
+  @override
+  String get nearbyReceiveScanMessage =>
+      'Point the camera at the QR code on the sender’s phone.';
+
+  @override
+  String get nearbyConfirmMessage =>
+      'Make sure this code matches the one on the sender’s phone before downloading.';
+
+  @override
+  String get nearbyVerifyCodeLabel => 'Verification code';
+
+  @override
+  String get nearbyVerifyHint => 'Compare this code on both phones.';
+
+  @override
+  String get nearbyCodesMatch => 'Codes match — download';
+
+  @override
+  String get nearbyRescan => 'Scan again';
+
+  @override
+  String get nearbyDownloading => 'Downloading encrypted backup…';
+
+  @override
+  String get nearbyReceiveFailed =>
+      'Could not download the backup. Stay on the same Wi‑Fi and try again.';
+
+  @override
+  String get nearbyMethodQr => 'QR code';
+
+  @override
+  String get nearbyMethodNfc => 'NFC';
+
+  @override
+  String get nearbyReceiveNfcMessage =>
+      'Hold this phone near the NFC tag the sender wrote. QR still works if you prefer.';
+
+  @override
+  String get nearbyNfcWriteAction => 'Write pairing to NFC tag';
+
+  @override
+  String get nearbyNfcWriteHint => 'Hold an NFC tag to the back of this phone…';
+
+  @override
+  String get nearbyNfcWriteSuccess => 'Pairing written to NFC tag.';
+
+  @override
+  String get nearbyNfcWriteFailed =>
+      'Could not write the NFC tag. Try again or use the QR code.';
+
+  @override
+  String get nearbyNfcCancel => 'Cancel NFC';
+
+  @override
+  String get nearbyNfcListening => 'Ready — hold near the sender’s NFC tag…';
+
+  @override
+  String get nearbyNfcReadFailed =>
+      'Could not read a Noteon pairing tag. Try again or use QR.';
+
+  @override
+  String get nearbyNfcRetry => 'Try NFC again';
 }
