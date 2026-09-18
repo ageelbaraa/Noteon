@@ -259,23 +259,8 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: |
-            mkdir -p build/ci
-            set +e
-            : > build/ci/emulator_tests.ndjson
-            : > build/ci/emulator_tests.stderr
-            code=0
-            for f in integration_test/*_test.dart; do
-              echo "=== $f ===" | tee -a build/ci/emulator_tests.stderr
-              flutter test "$f" -d emulator-5554 --machine \
-                2>>build/ci/emulator_tests.stderr | tee -a build/ci/emulator_tests.ndjson
-              c=${PIPESTATUS[0]}
-              if [ "$c" -ne 0 ]; then code=$c; fi
-            done
-            adb exec-out screencap -p > build/ci/emulator_screenshot.png || true
-            adb logcat -d > build/ci/emulator_logcat.txt || true
-            echo "EMU_EXIT=$code" | tee build/ci/emulator_exit.txt
-            exit $code
+          # Single command: android-emulator-runner runs each script line via sh -c.
+          script: bash .github/scripts/run_android_emulator_tests.sh
 
       - name: Upload emulator artifacts
         if: always()
