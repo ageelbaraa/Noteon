@@ -8,32 +8,38 @@
 
 | Layer | Status |
 |-------|--------|
-| GitHub Actions (analyze + unit/widget + host integration + APK build) | **Operational** (run 35338173375) |
-| Firebase Test Lab job | **Blocked**: GitHub secret `GCP_SA_KEY` missing; gcloud must use the Google account that owns `noteon-app` |
-| Real-device UX judgment (feel of scroll/IME) | Not automatable — still a human step |
+| GitHub Actions (analyze + unit/widget + host integration + APK build) | **Operational** |
+| gcloud auth for `noteon-app` | **Operational** as `arhajjajwork@gmail.com` |
+| GitHub secret `GCP_SA_KEY` | **Configured** (`noteon-ftl@noteon-app.iam.gserviceaccount.com`) |
+| Firebase Test Lab device runs | **Blocked on billing** — project `noteon-app` has `billingEnabled: false` and this account lists **0** billing accounts |
 
 Firebase project already linked via `android/app/google-services.json`:
 - **project_id:** `noteon-app`
 - **applicationId:** `com.noteon.app`
 
-### Fastest unblock (Windows)
+### Unblock FTL (billing — required)
 
-1. In a browser, sign in as the Google account that owns Firebase project **noteon-app**  
-   (Firebase CLI on this machine is logged in as `arhajjajwork@gmail.com` — use that account in the gcloud browser prompt, not a different personal Gmail).
-2. Run:
+Firebase Test Lab needs the **Blaze** plan (billing linked). Without it, `gcloud firebase test android run` fails when creating the results bucket:
+
+> Permission denied while creating bucket … Is billing enabled for project: [noteon-app]?
+
+1. Open https://console.firebase.google.com/project/noteon-app/usage/details while signed in as **`arhajjajwork@gmail.com`**
+2. Upgrade to **Blaze** / link a Cloud Billing account (Spark cannot run Test Lab).
+3. Confirm:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/setup_ftl_credentials.ps1
+gcloud billing projects describe noteon-app
+# billingEnabled should be true
 ```
 
-3. Then:
+4. Re-run:
 
 ```powershell
 gh workflow run ci.yml -f run_firebase_test_lab=true -f ftl_physical=true
 gh run watch
 ```
 
-The script enables APIs, creates `noteon-ftl@noteon-app.iam.gserviceaccount.com`, binds least-privilege roles, and sets GitHub secret `GCP_SA_KEY`.
+Credentials (`GCP_SA_KEY`) and the device matrix are already in place — only billing is missing.
 
 ## Required GitHub Secrets / Variables
 
