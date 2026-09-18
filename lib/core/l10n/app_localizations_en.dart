@@ -24,6 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get folders => 'Folders';
 
   @override
+  String get subfolders => 'Subfolders';
+
+  @override
   String get tags => 'Tags';
 
   @override
@@ -377,6 +380,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearCanvas => 'Clear';
 
   @override
+  String get sketchPen => 'Pen';
+
+  @override
+  String get sketchHighlighter => 'Highlighter';
+
+  @override
+  String get sketchEraser => 'Eraser';
+
+  @override
+  String get sketchLasso => 'Lasso';
+
+  @override
+  String get inkDrawingLabel => 'Drawing';
+
+  @override
+  String get inkDeleteSelected => 'Delete selected';
+
+  @override
+  String get inkLassoHint =>
+      'Draw around strokes to select, then drag to move.';
+
+  @override
+  String inkLassoSelected(int count) {
+    return '$count selected — drag to move';
+  }
+
+  @override
+  String get addPdf => 'Add PDF';
+
+  @override
+  String get pdfDocumentLabel => 'PDF document';
+
+  @override
+  String get pdfTapToAnnotate => 'Double-tap or Edit to annotate';
+
+  @override
+  String get pdfMissing => 'PDF unavailable';
+
+  @override
+  String get pdfImportFailed => 'Could not add the PDF. Please try again.';
+
+  @override
+  String get pdfAnnotateSaveFailed =>
+      'Could not save annotations. Please try again.';
+
+  @override
+  String pdfPageLabel(int page) {
+    return 'Page $page';
+  }
+
+  @override
   String get insertTable => 'Insert table';
 
   @override
@@ -394,6 +448,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tableLabel => 'Table';
+
+  @override
+  String get tableTitleHint => 'Table title';
+
+  @override
+  String get tableTitleOptional => 'Optional';
 
   @override
   String get tableActions => 'Table actions';
@@ -421,18 +481,193 @@ class AppLocalizationsEn extends AppLocalizations {
       'This removes the table from the note. This cannot be undone.';
 
   @override
-  String get editorZoomIn => 'Zoom in';
+  String get notesViewList => 'List view';
 
   @override
-  String get editorZoomOut => 'Zoom out';
+  String get notesViewGrid => 'Grid view';
 
   @override
-  String get editorZoomReset => 'Reset zoom';
+  String get blockMoveUp => 'Move up';
 
   @override
-  String editorZoomPercent(int percent) {
-    return '$percent%';
-  }
+  String get blockMoveDown => 'Move down';
+
+  @override
+  String get resizeImage => 'Resize image';
+
+  @override
+  String get replaceImage => 'Replace image';
+
+  @override
+  String get editBlock => 'Edit';
+
+  @override
+  String get resizeImageTitle => 'Image size';
+
+  @override
+  String get resizeImageMessage =>
+      'Adjust how large the image appears. The original file is kept.';
+
+  @override
+  String get deleteBlockTitle => 'Delete this item?';
+
+  @override
+  String get deleteBlockMessage =>
+      'This removes only the selected item from the note.';
+
+  @override
+  String get addAudio => 'Add audio';
+
+  @override
+  String get recordAudioTitle => 'Record audio';
+
+  @override
+  String get recordAudioMessage =>
+      'Tap record, then insert the clip into this note.';
+
+  @override
+  String get audioStartRecording => 'Record';
+
+  @override
+  String get audioStop => 'Stop';
+
+  @override
+  String get insertAudio => 'Insert';
+
+  @override
+  String get audioLabel => 'Audio';
+
+  @override
+  String get audioPlay => 'Play';
+
+  @override
+  String get audioPause => 'Pause';
+
+  @override
+  String get audioMissing => 'Audio unavailable';
+
+  @override
+  String get audioPlayFailed => 'Could not play this audio.';
+
+  @override
+  String get audioRecordFailed => 'Could not record audio. Please try again.';
+
+  @override
+  String get audioPermissionDenied =>
+      'Microphone access was denied. You can enable it in system settings.';
+
+  @override
+  String get shareNote => 'Share';
+
+  @override
+  String get shareAsText => 'Share as text';
+
+  @override
+  String get shareAsImage => 'Share as image';
+
+  @override
+  String get shareAsPdf => 'Share as PDF';
+
+  @override
+  String get shareEmptyNote => 'Empty note';
+
+  @override
+  String get shareFailed => 'Could not share this note. Please try again.';
+
+  @override
+  String get ocrImage => 'Copy text from image';
+
+  @override
+  String get ocrTitle => 'Text from image';
+
+  @override
+  String get ocrInsert => 'Insert into note';
+
+  @override
+  String get ocrCopy => 'Copy';
+
+  @override
+  String get ocrProgress => 'Reading text…';
+
+  @override
+  String get ocrUnsupported =>
+      'On-device text recognition is available on Android and iOS.';
+
+  @override
+  String get ocrNoText => 'No text was found in this image.';
+
+  @override
+  String get ocrFailed => 'Could not read text from this image.';
+
+  @override
+  String get ocrCopied => 'Copied to clipboard.';
+
+  @override
+  String get assistNote => 'Local assist';
+
+  @override
+  String get assistTidy => 'Tidy spacing';
+
+  @override
+  String get assistTidySubtitle =>
+      'Trim extra spaces and blank lines (selection).';
+
+  @override
+  String get assistBullets => 'Make bullet list';
+
+  @override
+  String get assistBulletsSubtitle =>
+      'Turn each line into a bullet (selection).';
+
+  @override
+  String get assistFirstLine => 'Separate first line';
+
+  @override
+  String get assistFirstLineSubtitle =>
+      'Add a blank line after the first line (selection).';
+
+  @override
+  String get assistSelectText => 'Select some text in the note first.';
+
+  @override
+  String get assistApplied =>
+      'Applied locally — nothing was sent to the cloud.';
+
+  @override
+  String get privacy => 'Privacy';
+
+  @override
+  String get privacyOcrTitle => 'On-device OCR';
+
+  @override
+  String get privacyOcrSubtitle =>
+      'Image text recognition runs on this phone. Nothing is uploaded.';
+
+  @override
+  String get privacyAssistTitle => 'Local assist';
+
+  @override
+  String get privacyAssistSubtitle =>
+      'Tidy and list helpers run on-device with no cloud AI.';
+
+  @override
+  String get privacyExportTitle => 'Share & export';
+
+  @override
+  String get privacyExportSubtitle =>
+      'PDF and shares stay on your device until you choose an app to send them.';
+
+  @override
+  String get notePageBackground => 'Note page background';
+
+  @override
+  String get notePageBackgroundPlain => 'Plain';
+
+  @override
+  String get notePageBackgroundLined => 'Lined';
+
+  @override
+  String get notePageBackgroundGrid => 'Grid';
 
   @override
   String get backupTransfer => 'Backup & transfer';

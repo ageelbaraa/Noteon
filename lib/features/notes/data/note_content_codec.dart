@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:noteon/features/notes/data/noteon_table_data.dart';
 
 /// Helpers for Quill Delta JSON stored in [Note.contentJson].
 abstract final class NoteContentCodec {
@@ -62,7 +63,16 @@ abstract final class NoteContentCodec {
     final hasBody = plainTextPreview(contentJson).isNotEmpty;
     final hasImages = contentJson.contains('"image"');
     final hasTables = contentJson.contains('"noteonTable"');
-    return !hasTitle && !hasBody && !hasImages && !hasTables;
+    final hasAudio = contentJson.contains('"noteonAudio"');
+    final hasInk = contentJson.contains('"noteonInk"');
+    final hasPdf = contentJson.contains('"noteonPdf"');
+    return !hasTitle &&
+        !hasBody &&
+        !hasImages &&
+        !hasTables &&
+        !hasAudio &&
+        !hasInk &&
+        !hasPdf;
   }
 
   static String _tablePlainText(String contentJson) {
@@ -122,7 +132,7 @@ abstract final class NoteContentCodec {
           continue;
         }
         for (final cell in row) {
-          final text = '$cell'.trim();
+          final text = NoteonTableData.sanitizeCellText(cell).trim();
           if (text.isNotEmpty) {
             parts.add(text);
           }

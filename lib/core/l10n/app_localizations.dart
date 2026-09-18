@@ -128,6 +128,12 @@ abstract class AppLocalizations {
   /// **'Folders'**
   String get folders;
 
+  /// No description provided for @subfolders.
+  ///
+  /// In en, this message translates to:
+  /// **'Subfolders'**
+  String get subfolders;
+
   /// No description provided for @tags.
   ///
   /// In en, this message translates to:
@@ -788,6 +794,96 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get clearCanvas;
 
+  /// No description provided for @sketchPen.
+  ///
+  /// In en, this message translates to:
+  /// **'Pen'**
+  String get sketchPen;
+
+  /// No description provided for @sketchHighlighter.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighter'**
+  String get sketchHighlighter;
+
+  /// No description provided for @sketchEraser.
+  ///
+  /// In en, this message translates to:
+  /// **'Eraser'**
+  String get sketchEraser;
+
+  /// No description provided for @sketchLasso.
+  ///
+  /// In en, this message translates to:
+  /// **'Lasso'**
+  String get sketchLasso;
+
+  /// No description provided for @inkDrawingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawing'**
+  String get inkDrawingLabel;
+
+  /// No description provided for @inkDeleteSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get inkDeleteSelected;
+
+  /// No description provided for @inkLassoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw around strokes to select, then drag to move.'**
+  String get inkLassoHint;
+
+  /// No description provided for @inkLassoSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected — drag to move'**
+  String inkLassoSelected(int count);
+
+  /// No description provided for @addPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Add PDF'**
+  String get addPdf;
+
+  /// No description provided for @pdfDocumentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF document'**
+  String get pdfDocumentLabel;
+
+  /// No description provided for @pdfTapToAnnotate.
+  ///
+  /// In en, this message translates to:
+  /// **'Double-tap or Edit to annotate'**
+  String get pdfTapToAnnotate;
+
+  /// No description provided for @pdfMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF unavailable'**
+  String get pdfMissing;
+
+  /// No description provided for @pdfImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not add the PDF. Please try again.'**
+  String get pdfImportFailed;
+
+  /// No description provided for @pdfAnnotateSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save annotations. Please try again.'**
+  String get pdfAnnotateSaveFailed;
+
+  /// No description provided for @pdfPageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page}'**
+  String pdfPageLabel(int page);
+
   /// No description provided for @insertTable.
   ///
   /// In en, this message translates to:
@@ -823,6 +919,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Table'**
   String get tableLabel;
+
+  /// No description provided for @tableTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Table title'**
+  String get tableTitleHint;
+
+  /// No description provided for @tableTitleOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get tableTitleOptional;
 
   /// No description provided for @tableActions.
   ///
@@ -872,29 +980,359 @@ abstract class AppLocalizations {
   /// **'This removes the table from the note. This cannot be undone.'**
   String get deleteTableMessage;
 
-  /// No description provided for @editorZoomIn.
+  /// No description provided for @notesViewList.
   ///
   /// In en, this message translates to:
-  /// **'Zoom in'**
-  String get editorZoomIn;
+  /// **'List view'**
+  String get notesViewList;
 
-  /// No description provided for @editorZoomOut.
+  /// No description provided for @notesViewGrid.
   ///
   /// In en, this message translates to:
-  /// **'Zoom out'**
-  String get editorZoomOut;
+  /// **'Grid view'**
+  String get notesViewGrid;
 
-  /// No description provided for @editorZoomReset.
+  /// No description provided for @blockMoveUp.
   ///
   /// In en, this message translates to:
-  /// **'Reset zoom'**
-  String get editorZoomReset;
+  /// **'Move up'**
+  String get blockMoveUp;
 
-  /// No description provided for @editorZoomPercent.
+  /// No description provided for @blockMoveDown.
   ///
   /// In en, this message translates to:
-  /// **'{percent}%'**
-  String editorZoomPercent(int percent);
+  /// **'Move down'**
+  String get blockMoveDown;
+
+  /// No description provided for @resizeImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Resize image'**
+  String get resizeImage;
+
+  /// No description provided for @replaceImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace image'**
+  String get replaceImage;
+
+  /// No description provided for @editBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editBlock;
+
+  /// No description provided for @resizeImageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Image size'**
+  String get resizeImageTitle;
+
+  /// No description provided for @resizeImageMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust how large the image appears. The original file is kept.'**
+  String get resizeImageMessage;
+
+  /// No description provided for @deleteBlockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this item?'**
+  String get deleteBlockTitle;
+
+  /// No description provided for @deleteBlockMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes only the selected item from the note.'**
+  String get deleteBlockMessage;
+
+  /// No description provided for @addAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Add audio'**
+  String get addAudio;
+
+  /// No description provided for @recordAudioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Record audio'**
+  String get recordAudioTitle;
+
+  /// No description provided for @recordAudioMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap record, then insert the clip into this note.'**
+  String get recordAudioMessage;
+
+  /// No description provided for @audioStartRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get audioStartRecording;
+
+  /// No description provided for @audioStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get audioStop;
+
+  /// No description provided for @insertAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert'**
+  String get insertAudio;
+
+  /// No description provided for @audioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get audioLabel;
+
+  /// No description provided for @audioPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get audioPlay;
+
+  /// No description provided for @audioPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get audioPause;
+
+  /// No description provided for @audioMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio unavailable'**
+  String get audioMissing;
+
+  /// No description provided for @audioPlayFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not play this audio.'**
+  String get audioPlayFailed;
+
+  /// No description provided for @audioRecordFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not record audio. Please try again.'**
+  String get audioRecordFailed;
+
+  /// No description provided for @audioPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone access was denied. You can enable it in system settings.'**
+  String get audioPermissionDenied;
+
+  /// No description provided for @shareNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get shareNote;
+
+  /// No description provided for @shareAsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Share as text'**
+  String get shareAsText;
+
+  /// No description provided for @shareAsImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Share as image'**
+  String get shareAsImage;
+
+  /// No description provided for @shareAsPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Share as PDF'**
+  String get shareAsPdf;
+
+  /// No description provided for @shareEmptyNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty note'**
+  String get shareEmptyNote;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not share this note. Please try again.'**
+  String get shareFailed;
+
+  /// No description provided for @ocrImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text from image'**
+  String get ocrImage;
+
+  /// No description provided for @ocrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Text from image'**
+  String get ocrTitle;
+
+  /// No description provided for @ocrInsert.
+  ///
+  /// In en, this message translates to:
+  /// **'Insert into note'**
+  String get ocrInsert;
+
+  /// No description provided for @ocrCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get ocrCopy;
+
+  /// No description provided for @ocrProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading text…'**
+  String get ocrProgress;
+
+  /// No description provided for @ocrUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device text recognition is available on Android and iOS.'**
+  String get ocrUnsupported;
+
+  /// No description provided for @ocrNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'No text was found in this image.'**
+  String get ocrNoText;
+
+  /// No description provided for @ocrFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read text from this image.'**
+  String get ocrFailed;
+
+  /// No description provided for @ocrCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard.'**
+  String get ocrCopied;
+
+  /// No description provided for @assistNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Local assist'**
+  String get assistNote;
+
+  /// No description provided for @assistTidy.
+  ///
+  /// In en, this message translates to:
+  /// **'Tidy spacing'**
+  String get assistTidy;
+
+  /// No description provided for @assistTidySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trim extra spaces and blank lines (selection).'**
+  String get assistTidySubtitle;
+
+  /// No description provided for @assistBullets.
+  ///
+  /// In en, this message translates to:
+  /// **'Make bullet list'**
+  String get assistBullets;
+
+  /// No description provided for @assistBulletsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn each line into a bullet (selection).'**
+  String get assistBulletsSubtitle;
+
+  /// No description provided for @assistFirstLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Separate first line'**
+  String get assistFirstLine;
+
+  /// No description provided for @assistFirstLineSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a blank line after the first line (selection).'**
+  String get assistFirstLineSubtitle;
+
+  /// No description provided for @assistSelectText.
+  ///
+  /// In en, this message translates to:
+  /// **'Select some text in the note first.'**
+  String get assistSelectText;
+
+  /// No description provided for @assistApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied locally — nothing was sent to the cloud.'**
+  String get assistApplied;
+
+  /// No description provided for @privacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get privacy;
+
+  /// No description provided for @privacyOcrTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device OCR'**
+  String get privacyOcrTitle;
+
+  /// No description provided for @privacyOcrSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Image text recognition runs on this phone. Nothing is uploaded.'**
+  String get privacyOcrSubtitle;
+
+  /// No description provided for @privacyAssistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Local assist'**
+  String get privacyAssistTitle;
+
+  /// No description provided for @privacyAssistSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tidy and list helpers run on-device with no cloud AI.'**
+  String get privacyAssistSubtitle;
+
+  /// No description provided for @privacyExportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share & export'**
+  String get privacyExportTitle;
+
+  /// No description provided for @privacyExportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF and shares stay on your device until you choose an app to send them.'**
+  String get privacyExportSubtitle;
+
+  /// No description provided for @notePageBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Note page background'**
+  String get notePageBackground;
+
+  /// No description provided for @notePageBackgroundPlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Plain'**
+  String get notePageBackgroundPlain;
+
+  /// No description provided for @notePageBackgroundLined.
+  ///
+  /// In en, this message translates to:
+  /// **'Lined'**
+  String get notePageBackgroundLined;
+
+  /// No description provided for @notePageBackgroundGrid.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid'**
+  String get notePageBackgroundGrid;
 
   /// No description provided for @backupTransfer.
   ///

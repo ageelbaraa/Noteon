@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/providers/settings_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
 import '../../../shared/navigation/noteon_page_route.dart';
 import '../../../shared/widgets/noteon_background.dart';
 import '../../../shared/widgets/noteon_empty_state.dart';
+import '../../../shared/widgets/noteon_group_surface.dart';
 import '../../../shared/widgets/noteon_note_tile.dart';
 import '../../../shared/widgets/noteon_section_header.dart';
+import '../../folders/data/folder.dart';
 import '../data/note.dart';
 import '../domain/note_date_grouper.dart';
 import 'note_editor_screen.dart';
@@ -70,9 +73,12 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final filter = ref.watch(notesBrowseFilterProvider);
+    final viewMode = ref.watch(notesViewModeProvider);
     final groupedAsync = ref.watch(groupedNotesProvider);
     final folders = ref.watch(foldersListProvider).valueOrNull ?? const [];
     final tags = ref.watch(tagsListProvider).valueOrNull ?? const [];
+    final roots =
+        folders.where((folder) => folder.parentFolderId == null).toList();
 
     if (!filter.searchVisible && _searchController.text.isNotEmpty) {
       _searchController.clear();
@@ -110,6 +116,18 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: viewMode == NotesViewMode.list
+                ? l10n.notesViewGrid
+                : l10n.notesViewList,
+            onPressed: () =>
+                ref.read(notesViewModeProvider.notifier).toggle(),
+            icon: Icon(
+              viewMode == NotesViewMode.list
+                  ? Icons.grid_view_rounded
+                  : Icons.view_agenda_rounded,
+            ),
+          ),
+          IconButton(
             tooltip: l10n.searchNotes,
             onPressed: () {
               final next = !filter.searchVisible;
@@ -134,6 +152,19 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
       body: NoteonBackground(
         child: Column(
           children: [
+            _FolderChipStrip(
+              folders: roots,
+              allFolders: folders,
+              selectedScope: filter.folderScope,
+              selectedFolderId: filter.folderId,
+              onAll: () =>
+                  ref.read(notesBrowseFilterProvider.notifier).clearFilters(),
+              onUnfiled: () =>
+                  ref.read(notesBrowseFilterProvider.notifier).showUnfiled(),
+              onFolder: (id) => ref
+                  .read(notesBrowseFilterProvider.notifier)
+                  .selectFolder(id),
+            ),
             AnimatedSize(
               duration: AppMotion.normal,
               curve: AppMotion.standard,
@@ -208,7 +239,15 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                 data: (sections) {
                   final totalNotes =
                       sections.fold<int>(0, (sum, s) => sum + s.notes.length);
-                  if (totalNotes == 0) {
+                  final childFolders =
+                      filter.folderScope == FolderScope.folder &&
+                              filter.folderId != null
+                          ? folders
+                              .where((f) => f.parentFolderId == filter.folderId)
+                              .toList(growable: false)
+                          : const <Folder>[];
+
+                  if (totalNotes == 0 && childFolders.isEmpty) {
                     if (filter.hasActiveFilter) {
                       return _FilteredEmptyState(
                         onClear: () {
@@ -222,45 +261,47 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                     return const _EmptyNotesState();
                   }
 
+                  final subfoldersHeader = childFolders.isEmpty
+                      ? null
+                      : _SubfoldersSection(
+                          folders: childFolders,
+                          onOpen: (id) => ref
+                              .read(notesBrowseFilterProvider.notifier)
+                              .selectFolder(id),
+                        );
+
                   return RefreshIndicator(
                     color: AppColors.teal,
                     onRefresh: _refreshAll,
-                    child: ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(
-                        parent: BouncingScrollPhysics(),
-                      ),
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.lg,
-                        AppSpacing.sm,
-                        AppSpacing.lg,
-                        108,
-                      ),
-                      itemCount: sections.length,
-                      itemBuilder: (context, index) {
-                        final section = sections[index];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            NoteonSectionHeader(
-                              title: _bucketLabel(l10n, section.bucket),
-                              padding: EdgeInsets.only(
-                                top: index == 0 ? 4 : 20,
-                                bottom: 10,
-                                left: 4,
-                                right: 4,
-                              ),
-                            ),
-                            for (var i = 0; i < section.notes.length; i++) ...[
-                              if (i > 0) const SizedBox(height: 10),
-                              NoteonNoteTile(
-                                note: section.notes[i],
-                                onTap: () => _openNote(section.notes[i]),
-                              ),
-                            ],
-                          ],
-                        );
-                      },
-                    ),
+                    child: viewMode == NotesViewMode.grid
+                        ? _NotesGridBody(
+                            sections: sections,
+                            bucketLabel: (bucket) =>
+                                _bucketLabel(l10n, bucket),
+                            onOpen: _openNote,
+                            leading: subfoldersHeader,
+                            emptyNotesPlaceholder: totalNotes == 0
+                                ? NoteonEmptyState(
+                                    icon: Icons.note_alt_outlined,
+                                    title: l10n.emptyNotesTitle,
+                                    subtitle: l10n.emptyNotesSubtitle,
+                                  )
+                                : null,
+                          )
+                        : _NotesListBody(
+                            sections: sections,
+                            bucketLabel: (bucket) =>
+                                _bucketLabel(l10n, bucket),
+                            onOpen: _openNote,
+                            leading: subfoldersHeader,
+                            emptyNotesPlaceholder: totalNotes == 0
+                                ? NoteonEmptyState(
+                                    icon: Icons.note_alt_outlined,
+                                    title: l10n.emptyNotesTitle,
+                                    subtitle: l10n.emptyNotesSubtitle,
+                                  )
+                                : null,
+                          ),
                   );
                 },
               ),
@@ -284,6 +325,302 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
       NoteDateBucket.thisWeek => l10n.dateGroupThisWeek,
       NoteDateBucket.older => l10n.dateGroupOlder,
     };
+  }
+}
+
+class _FolderChipStrip extends StatelessWidget {
+  const _FolderChipStrip({
+    required this.folders,
+    required this.allFolders,
+    required this.selectedScope,
+    required this.selectedFolderId,
+    required this.onAll,
+    required this.onUnfiled,
+    required this.onFolder,
+  });
+
+  final List<Folder> folders;
+  final List<Folder> allFolders;
+  final FolderScope selectedScope;
+  final int? selectedFolderId;
+  final VoidCallback onAll;
+  final VoidCallback onUnfiled;
+  final ValueChanged<int> onFolder;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final children = allFolders
+        .where((f) => f.parentFolderId != null)
+        .toList(growable: false);
+
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          AppSpacing.lg,
+          4,
+          AppSpacing.lg,
+          8,
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.notes_rounded, size: 16),
+              label: Text(l10n.allNotes),
+              selected: selectedScope == FolderScope.all,
+              onSelected: (_) => onAll(),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 8),
+            child: FilterChip(
+              avatar: const Icon(Icons.inbox_outlined, size: 16),
+              label: Text(l10n.unfiledNotes),
+              selected: selectedScope == FolderScope.unfiled,
+              onSelected: (_) => onUnfiled(),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+          for (final folder in folders) ...[
+            Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8),
+              child: FilterChip(
+                avatar: const Icon(Icons.folder_outlined, size: 16),
+                label: Text(folder.name),
+                selected: selectedScope == FolderScope.folder &&
+                    selectedFolderId == folder.id,
+                onSelected: (_) => onFolder(folder.id),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
+            for (final child in children.where(
+              (c) => c.parentFolderId == folder.id,
+            ))
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8),
+                child: FilterChip(
+                  avatar: const Icon(Icons.subdirectory_arrow_right, size: 16),
+                  label: Text(child.name),
+                  selected: selectedScope == FolderScope.folder &&
+                      selectedFolderId == child.id,
+                  onSelected: (_) => onFolder(child.id),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SubfoldersSection extends StatelessWidget {
+  const _SubfoldersSection({
+    required this.folders,
+    required this.onOpen,
+  });
+
+  final List<Folder> folders;
+  final ValueChanged<int> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        NoteonSectionHeader(
+          title: l10n.subfolders,
+          padding: const EdgeInsets.only(top: 4, bottom: 10, left: 4, right: 4),
+        ),
+        NoteonGroupSurface(
+          children: [
+            for (final folder in folders)
+              NoteonGroupTile(
+                leading: const Icon(Icons.folder_outlined),
+                title: folder.name,
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => onOpen(folder.id),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _NotesListBody extends StatelessWidget {
+  const _NotesListBody({
+    required this.sections,
+    required this.bucketLabel,
+    required this.onOpen,
+    this.leading,
+    this.emptyNotesPlaceholder,
+  });
+
+  final List<NoteDateSection> sections;
+  final String Function(NoteDateBucket bucket) bucketLabel;
+  final ValueChanged<Note> onOpen;
+  final Widget? leading;
+  final Widget? emptyNotesPlaceholder;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNotes = sections.any((s) => s.notes.isNotEmpty);
+    final showEmpty = !hasNotes && emptyNotesPlaceholder != null;
+    final topCount = (leading != null ? 1 : 0) + (showEmpty ? 1 : 0);
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        108,
+      ),
+      itemCount: topCount + (hasNotes ? sections.length : 0),
+      itemBuilder: (context, index) {
+        var cursor = index;
+        if (leading != null) {
+          if (cursor == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: leading,
+            );
+          }
+          cursor -= 1;
+        }
+        if (showEmpty) {
+          if (cursor == 0) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: emptyNotesPlaceholder,
+            );
+          }
+          cursor -= 1;
+        }
+        final section = sections[cursor];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            NoteonSectionHeader(
+              title: bucketLabel(section.bucket),
+              padding: EdgeInsets.only(
+                top: cursor == 0 && leading == null ? 4 : 20,
+                bottom: 10,
+                left: 4,
+                right: 4,
+              ),
+            ),
+            for (var i = 0; i < section.notes.length; i++) ...[
+              if (i > 0) const SizedBox(height: 10),
+              NoteonNoteTile(
+                note: section.notes[i],
+                onTap: () => onOpen(section.notes[i]),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _NotesGridBody extends StatelessWidget {
+  const _NotesGridBody({
+    required this.sections,
+    required this.bucketLabel,
+    required this.onOpen,
+    this.leading,
+    this.emptyNotesPlaceholder,
+  });
+
+  final List<NoteDateSection> sections;
+  final String Function(NoteDateBucket bucket) bucketLabel;
+  final ValueChanged<Note> onOpen;
+  final Widget? leading;
+  final Widget? emptyNotesPlaceholder;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final crossAxisCount = width >= 720 ? 3 : 2;
+    final hasNotes = sections.any((s) => s.notes.isNotEmpty);
+    final showEmpty = !hasNotes && emptyNotesPlaceholder != null;
+    final topCount = (leading != null ? 1 : 0) + (showEmpty ? 1 : 0);
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        108,
+      ),
+      itemCount: topCount + (hasNotes ? sections.length : 0),
+      itemBuilder: (context, index) {
+        var cursor = index;
+        if (leading != null) {
+          if (cursor == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: leading,
+            );
+          }
+          cursor -= 1;
+        }
+        if (showEmpty) {
+          if (cursor == 0) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              child: emptyNotesPlaceholder,
+            );
+          }
+          cursor -= 1;
+        }
+        final section = sections[cursor];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            NoteonSectionHeader(
+              title: bucketLabel(section.bucket),
+              padding: EdgeInsets.only(
+                top: cursor == 0 && leading == null ? 4 : 20,
+                bottom: 10,
+                left: 4,
+                right: 4,
+              ),
+            ),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: section.notes.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.92,
+              ),
+              itemBuilder: (context, i) {
+                final note = section.notes[i];
+                return NoteonNoteGridCard(
+                  note: note,
+                  onTap: () => onOpen(note),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

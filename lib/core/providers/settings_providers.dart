@@ -4,7 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../settings/app_settings_store.dart';
 
-export '../settings/app_settings_store.dart' show AppThemeMode, AppSettingsStore;
+export '../settings/app_settings_store.dart'
+    show
+        AppThemeMode,
+        AppSettingsStore,
+        NotesViewMode,
+        NotePageBackground;
 
 /// Overridden in [main] after [SharedPreferences.getInstance].
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -47,4 +52,46 @@ class LocaleNotifier extends Notifier<Locale?> {
 
 final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(
   LocaleNotifier.new,
+);
+
+/// Holds list vs grid preference for the home notes screen (persisted).
+class NotesViewModeNotifier extends Notifier<NotesViewMode> {
+  @override
+  NotesViewMode build() {
+    return ref.watch(appSettingsStoreProvider).readNotesViewMode();
+  }
+
+  Future<void> setMode(NotesViewMode mode) async {
+    state = mode;
+    await ref.read(appSettingsStoreProvider).writeNotesViewMode(mode);
+  }
+
+  Future<void> toggle() {
+    return setMode(
+      state == NotesViewMode.list ? NotesViewMode.grid : NotesViewMode.list,
+    );
+  }
+}
+
+final notesViewModeProvider =
+    NotifierProvider<NotesViewModeNotifier, NotesViewMode>(
+  NotesViewModeNotifier.new,
+);
+
+/// Editor page paper pattern (lined/grid/plain), persisted locally.
+class NotePageBackgroundNotifier extends Notifier<NotePageBackground> {
+  @override
+  NotePageBackground build() {
+    return ref.watch(appSettingsStoreProvider).readNotePageBackground();
+  }
+
+  Future<void> setBackground(NotePageBackground value) async {
+    state = value;
+    await ref.read(appSettingsStoreProvider).writeNotePageBackground(value);
+  }
+}
+
+final notePageBackgroundProvider =
+    NotifierProvider<NotePageBackgroundNotifier, NotePageBackground>(
+  NotePageBackgroundNotifier.new,
 );

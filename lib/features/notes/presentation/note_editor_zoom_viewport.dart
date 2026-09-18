@@ -1,19 +1,44 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/l10n/app_localizations.dart';
-import '../../../core/theme/app_colors.dart';
-
-/// Pinch-to-zoom + pan canvas around the note body (Samsung Notes–style).
+/// Builds a Samsung Notes–style zoom matrix: scale around a scene point so
+/// that [focalViewport] stays on [focalScene].
 ///
-/// At 100% scale, pan is disabled so normal editor scrolling/selection works.
-/// When zoomed in, the user can pan to focus a region while the editor still
-/// scrolls internally for long notes.
+/// Always `T(focal) * S(scale) * T(-scene)` — never stacked scales on a
+/// translated matrix, which made pinch-in irreversible.
+Matrix4 noteEditorZoomMatrix({
+  required double scale,
+  required Offset focalViewport,
+  required Offset focalScene,
+}) {
+  return Matrix4.identity()
+    ..translateByDouble(focalViewport.dx, focalViewport.dy, 0, 1)
+    ..scaleByDouble(scale, scale, 1, 1)
+    ..translateByDouble(-focalScene.dx, -focalScene.dy, 0, 1);
+}
+
+double noteEditorZoomScale({
+  required double startScale,
+  required double startSpan,
+  required double span,
+  required double minScale,
+  required double maxScale,
+}) {
+  final safeStartSpan = startSpan < 1 ? 1.0 : startSpan;
+  return (startScale * (span / safeStartSpan)).clamp(minScale, maxScale);
+}
+
+/// Samsung Notes–style pinch zoom for the note body.
+///
+/// Two-finger pinch zooms around the finger focal point; two-finger drag pans
+/// while zoomed. 1× is only the starting size — pinch-in shrinks and pinch-out
+/// enlarges within [minScale]–[maxScale]. Uses a [Listener] so one-finger
+/// scroll/select/edit keep working.
 class NoteEditorZoomViewport extends StatefulWidget {
   const NoteEditorZoomViewport({
     super.key,
     required this.child,
-    this.minScale = 1,
-    this.maxScale = 3.5,
+    this.minScale = 0.25,
+    this.maxScale = 8,
   });
 
   final Widget child;
@@ -21,144 +46,136 @@ class NoteEditorZoomViewport extends StatefulWidget {
   final double maxScale;
 
   @override
-  State<NoteEditorZoomViewport> createState() => NoteEditorZoomViewportState();
+  State<NoteEditorZoomViewport> createState() => _NoteEditorZoomViewportState();
 }
 
-class NoteEditorZoomViewportState extends State<NoteEditorZoomViewport> {
+class _NoteEditorZoomViewportState extends State<NoteEditorZoomViewport> {
   final _transform = TransformationController();
-  final _scale = ValueNotifier<double>(1);
 
-  /// Whether pan is enabled; only toggles when crossing the zoom threshold so
-  /// pinch gestures do not rebuild the heavy Quill editor subtree.
-  var _panEnabled = false;
+  /// Active pointer positions in this viewport's local coordinates.
+  final Map<int, Offset> _pointers = {};
 
-  double get scale => _scale.value;
-  bool get isZoomed => _scale.value > 1.02;
-
-  @override
-  void initState() {
-    super.initState();
-    _transform.addListener(_onTransform);
-  }
+  double _gestureStartScale = 1;
+  double _gestureStartSpan = 1;
+  Offset? _referenceFocalScene;
 
   @override
   void dispose() {
-    _transform
-      ..removeListener(_onTransform)
-      ..dispose();
-    _scale.dispose();
+    _transform.dispose();
     super.dispose();
   }
 
-  void _onTransform() {
-    final next = _transform.value.getMaxScaleOnAxis();
-    if ((next - _scale.value).abs() >= 0.001) {
-      _scale.value = next;
-    }
-    final shouldPan = next > 1.02;
-    if (shouldPan != _panEnabled) {
-      setState(() => _panEnabled = shouldPan);
-    }
-  }
-
-  void zoomIn() => _zoomBy(1.2);
-
-  void zoomOut() => _zoomBy(1 / 1.2);
-
-  void resetZoom() {
-    _transform.value = Matrix4.identity();
-  }
-
-  void _zoomBy(double factor) {
-    final current = _transform.value.getMaxScaleOnAxis();
-    final target = (current * factor).clamp(widget.minScale, widget.maxScale);
-    if ((target - current).abs() < 0.001) {
-      return;
-    }
-    final size = context.size;
-    if (size == null) {
-      return;
-    }
-    final focal = Offset(size.width / 2, size.height / 2);
-    final sceneFocal = _transform.toScene(focal);
-    final next = Matrix4.identity()
-      ..translateByDouble(focal.dx, focal.dy, 0, 1)
-      ..scaleByDouble(target, target, 1, 1)
-      ..translateByDouble(-sceneFocal.dx, -sceneFocal.dy, 0, 1);
-    _transform.value = next;
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        InteractiveViewer(
-          transformationController: _transform,
-          minScale: widget.minScale,
-          maxScale: widget.maxScale,
-          // Keep editor gestures at 1×; pan only when zoomed.
-          panEnabled: _panEnabled,
-          scaleEnabled: true,
-          trackpadScrollCausesScale: false,
-          clipBehavior: Clip.hardEdge,
-          boundaryMargin: const EdgeInsets.all(48),
-          child: SizedBox.expand(child: widget.child),
-        ),
-        PositionedDirectional(
-          end: 12,
-          bottom: 12,
-          child: ValueListenableBuilder<double>(
-            valueListenable: _scale,
-            builder: (context, scale, _) {
-              if (scale <= 1.02) {
-                return const SizedBox.shrink();
-              }
-              return _ZoomBadge(scale: scale, onReset: resetZoom);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ZoomBadge extends StatelessWidget {
-  const _ZoomBadge({required this.scale, required this.onReset});
-
-  final double scale;
-  final VoidCallback onReset;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final percent = (scale * 100).round();
-
-    return Material(
-      color: theme.colorScheme.surface.withValues(alpha: 0.92),
-      elevation: 2,
-      borderRadius: BorderRadius.circular(20),
-      child: InkWell(
-        onTap: onReset,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.zoom_out_map, size: 16, color: AppColors.teal),
-              const SizedBox(width: 6),
-              Text(
-                l10n.editorZoomPercent(percent),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
+    return ClipRect(
+      child: Listener(
+        // Must hit the full viewport, not only the scaled child. Otherwise
+        // pinch-in shrinks the hit target and the gesture is cancelled —
+        // the reason zoom-out appeared broken from 1× after zooming in.
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: _onPointerDown,
+        onPointerMove: _onPointerMove,
+        onPointerUp: _onPointerUp,
+        onPointerCancel: _onPointerUp,
+        child: ListenableBuilder(
+          listenable: _transform,
+          builder: (context, _) {
+            return Transform(
+              transform: _transform.value,
+              filterQuality: FilterQuality.medium,
+              child: SizedBox.expand(child: widget.child),
+            );
+          },
         ),
       ),
     );
+  }
+
+  void _onPointerDown(PointerDownEvent event) {
+    _pointers[event.pointer] = event.localPosition;
+    if (_pointers.length == 2) {
+      _beginTwoFingerGesture();
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (!_pointers.containsKey(event.pointer)) {
+      return;
+    }
+    _pointers[event.pointer] = event.localPosition;
+    if (_pointers.length != 2 || _referenceFocalScene == null) {
+      return;
+    }
+    _updateTwoFingerGesture();
+  }
+
+  void _onPointerUp(PointerEvent event) {
+    _pointers.remove(event.pointer);
+
+    if (_pointers.length == 2) {
+      _beginTwoFingerGesture();
+      return;
+    }
+
+    _referenceFocalScene = null;
+
+    if (_pointers.isEmpty) {
+      _normalizeNearDefaultScale();
+    }
+  }
+
+  void _beginTwoFingerGesture() {
+    _gestureStartScale = _transform.value.getMaxScaleOnAxis();
+    _gestureStartSpan = _fingerSpan();
+    _referenceFocalScene = _toScene(_transform.value, _focalPoint());
+  }
+
+  void _updateTwoFingerGesture() {
+    final reference = _referenceFocalScene;
+    if (reference == null) {
+      return;
+    }
+
+    final focal = _focalPoint();
+    final scale = noteEditorZoomScale(
+      startScale: _gestureStartScale,
+      startSpan: _gestureStartSpan,
+      span: _fingerSpan(),
+      minScale: widget.minScale,
+      maxScale: widget.maxScale,
+    );
+
+    _transform.value = noteEditorZoomMatrix(
+      scale: scale,
+      focalViewport: focal,
+      focalScene: reference,
+    );
+  }
+
+  /// Settle on a clean identity only when the user lands near the default 1×.
+  /// Do not snap a deliberately zoomed-out or zoomed-in scale.
+  void _normalizeNearDefaultScale() {
+    final scale = _transform.value.getMaxScaleOnAxis();
+    if ((scale - 1.0).abs() <= 0.04) {
+      _transform.value = Matrix4.identity();
+    }
+  }
+
+  Offset _focalPoint() {
+    final points = _pointers.values.toList(growable: false);
+    return (points[0] + points[1]) / 2;
+  }
+
+  double _fingerSpan() {
+    final points = _pointers.values.toList(growable: false);
+    return (points[0] - points[1]).distance.clamp(1.0, double.infinity);
+  }
+
+  Offset _toScene(Matrix4 matrix, Offset viewportPoint) {
+    final inverse = Matrix4.tryInvert(Matrix4.copy(matrix));
+    if (inverse == null) {
+      return viewportPoint;
+    }
+    return MatrixUtils.transformPoint(inverse, viewportPoint);
   }
 }

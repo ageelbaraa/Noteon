@@ -8,7 +8,20 @@ enum AppThemeMode {
   dark,
 }
 
-/// Local persistence for theme and language preferences.
+/// How notes are laid out on the home screen.
+enum NotesViewMode {
+  list,
+  grid,
+}
+
+/// Paper pattern behind the note editor body.
+enum NotePageBackground {
+  plain,
+  lined,
+  grid,
+}
+
+/// Local persistence for theme, language, and notes view preferences.
 class AppSettingsStore {
   AppSettingsStore(this._prefs);
 
@@ -16,6 +29,8 @@ class AppSettingsStore {
 
   static const themeKey = 'noteon.theme_mode';
   static const localeKey = 'noteon.locale';
+  static const notesViewModeKey = 'noteon.notes_view_mode';
+  static const notePageBackgroundKey = 'noteon.note_page_background';
 
   AppThemeMode readThemeMode() {
     final raw = _prefs.getString(themeKey);
@@ -49,5 +64,39 @@ class AppSettingsStore {
   Future<void> writeLocale(Locale? locale) {
     final value = locale?.languageCode ?? 'system';
     return _prefs.setString(localeKey, value);
+  }
+
+  NotesViewMode readNotesViewMode() {
+    final raw = _prefs.getString(notesViewModeKey);
+    if (raw == null) {
+      return NotesViewMode.list;
+    }
+    for (final mode in NotesViewMode.values) {
+      if (mode.name == raw) {
+        return mode;
+      }
+    }
+    return NotesViewMode.list;
+  }
+
+  Future<void> writeNotesViewMode(NotesViewMode mode) {
+    return _prefs.setString(notesViewModeKey, mode.name);
+  }
+
+  NotePageBackground readNotePageBackground() {
+    final raw = _prefs.getString(notePageBackgroundKey);
+    if (raw == null) {
+      return NotePageBackground.plain;
+    }
+    for (final mode in NotePageBackground.values) {
+      if (mode.name == raw) {
+        return mode;
+      }
+    }
+    return NotePageBackground.plain;
+  }
+
+  Future<void> writeNotePageBackground(NotePageBackground mode) {
+    return _prefs.setString(notePageBackgroundKey, mode.name);
   }
 }

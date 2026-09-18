@@ -9,6 +9,7 @@ class NoteonTableData {
     required this.rows,
     required this.columns,
     required this.cells,
+    this.title = '',
   });
 
   static const int minSize = 1;
@@ -20,6 +21,9 @@ class NoteonTableData {
   final int rows;
   final int columns;
 
+  /// Optional caption shown above the table. Empty when unset.
+  final String title;
+
   /// Cell text as [row][column].
   final List<List<String>> cells;
 
@@ -27,6 +31,7 @@ class NoteonTableData {
     required int rows,
     required int columns,
     String? id,
+    String title = '',
   }) {
     final r = rows.clamp(minSize, maxSize);
     final c = columns.clamp(minSize, maxSize);
@@ -34,6 +39,7 @@ class NoteonTableData {
       id: id ?? const Uuid().v4(),
       rows: r,
       columns: c,
+      title: title,
       cells: List.generate(
         r,
         (_) => List.generate(c, (_) => ''),
@@ -45,13 +51,14 @@ class NoteonTableData {
     final rows = (json['rows'] as num?)?.toInt() ?? 1;
     final columns = (json['columns'] as num?)?.toInt() ?? 1;
     final id = (json['id'] as String?)?.trim();
+    final title = '${json['title'] ?? ''}'.trim();
     final rawCells = json['cells'];
 
     final cells = <List<String>>[];
     if (rawCells is List) {
       for (final row in rawCells) {
         if (row is List) {
-          cells.add(row.map((cell) => '${cell ?? ''}').toList());
+          cells.add(row.map(sanitizeCellText).toList());
         }
       }
     }
@@ -75,6 +82,7 @@ class NoteonTableData {
       id: (id == null || id.isEmpty) ? const Uuid().v4() : id,
       rows: rows.clamp(minSize, maxSize * 2),
       columns: columns.clamp(minSize, maxSize * 2),
+      title: title,
       cells: cells,
     );
   }
@@ -94,14 +102,35 @@ class NoteonTableData {
         'id': id,
         'rows': rows,
         'columns': columns,
+        'title': title,
         'cells': cells,
       };
 
   String toJsonString() => jsonEncode(toJson());
 
+  /// Coerces a cell payload to plain text. Never uses Map/List `.toString()`,
+  /// and strips Quill's U+FFFC object-replacement character if it leaked in.
+  static String sanitizeCellText(Object? cell) {
+    if (cell == null) {
+      return '';
+    }
+    if (cell is String) {
+      return cell.replaceAll('\uFFFC', '');
+    }
+    if (cell is num || cell is bool) {
+      return '$cell';
+    }
+    // Unexpected structured values must not become "{...}" / object strings.
+    return '';
+  }
+
   /// Plain text used for list previews and search.
   String toPlainText() {
     final parts = <String>[];
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isNotEmpty) {
+      parts.add(trimmedTitle);
+    }
     for (final row in cells) {
       for (final cell in row) {
         final trimmed = cell.trim();
@@ -115,27 +144,34 @@ class NoteonTableData {
 
   bool get hasContent => toPlainText().isNotEmpty;
 
-  NoteonTableData copyWithCell(int row, int column, String value) {
-    final next = cells
-        .map((r) => List<String>.from(r))
-        .toList(growable: false);
-    next[row][column] = value;
+  NoteonTableData copyWith({
+    String? title,
+    List<List<String>>? cells,
+    int? rows,
+    int? columns,
+  }) {
     return NoteonTableData(
       id: id,
-      rows: rows,
-      columns: columns,
-      cells: next,
+      rows: rows ?? this.rows,
+      columns: columns ?? this.columns,
+      title: title ?? this.title,
+      cells: cells ??
+          this.cells.map((r) => List<String>.from(r)).toList(growable: false),
     );
+  }
+
+  NoteonTableData copyWithCell(int row, int column, String value) {
+    final next = cells.map((r) => List<String>.from(r)).toList(growable: false);
+    next[row][column] = sanitizeCellText(value);
+    return copyWith(cells: next);
   }
 
   NoteonTableData addRow() {
     if (rows >= maxSize * 2) {
       return this;
     }
-    return NoteonTableData(
-      id: id,
+    return copyWith(
       rows: rows + 1,
-      columns: columns,
       cells: [
         ...cells.map((r) => List<String>.from(r)),
         List.generate(columns, (_) => ''),
@@ -152,21 +188,14 @@ class NoteonTableData {
       for (var i = 0; i < cells.length; i++)
         if (i != removeAt) List<String>.from(cells[i]),
     ];
-    return NoteonTableData(
-      id: id,
-      rows: rows - 1,
-      columns: columns,
-      cells: next,
-    );
+    return copyWith(rows: rows - 1, cells: next);
   }
 
   NoteonTableData addColumn() {
     if (columns >= maxSize * 2) {
       return this;
     }
-    return NoteonTableData(
-      id: id,
-      rows: rows,
+    return copyWith(
       columns: columns + 1,
       cells: [
         for (final row in cells) [...row, ''],
@@ -179,9 +208,7 @@ class NoteonTableData {
       return this;
     }
     final removeAt = (index ?? columns - 1).clamp(0, columns - 1);
-    return NoteonTableData(
-      id: id,
-      rows: rows,
+    return copyWith(
       columns: columns - 1,
       cells: [
         for (final row in cells)

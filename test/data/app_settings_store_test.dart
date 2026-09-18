@@ -42,4 +42,26 @@ void main() {
     final store = AppSettingsStore(prefs);
     expect(store.readThemeMode(), AppThemeMode.system);
   });
+
+  test('persists notes view mode across store instances', () async {
+    final prefs = await SharedPreferences.getInstance();
+    final store = AppSettingsStore(prefs);
+
+    expect(store.readNotesViewMode(), NotesViewMode.list);
+    await store.writeNotesViewMode(NotesViewMode.grid);
+
+    final reloaded = AppSettingsStore(await SharedPreferences.getInstance());
+    expect(reloaded.readNotesViewMode(), NotesViewMode.grid);
+  });
+
+  test('persists note page background preference', () async {
+    final prefs = await SharedPreferences.getInstance();
+    final store = AppSettingsStore(prefs);
+
+    expect(store.readNotePageBackground(), NotePageBackground.plain);
+    await store.writeNotePageBackground(NotePageBackground.lined);
+
+    final reloaded = AppSettingsStore(await SharedPreferences.getInstance());
+    expect(reloaded.readNotePageBackground(), NotePageBackground.lined);
+  });
 }

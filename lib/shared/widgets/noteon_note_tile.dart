@@ -134,3 +134,99 @@ class NoteonNoteTile extends StatelessWidget {
     );
   }
 }
+
+/// Compact note card for the home grid view.
+class NoteonNoteGridCard extends StatelessWidget {
+  const NoteonNoteGridCard({
+    super.key,
+    required this.note,
+    required this.onTap,
+  });
+
+  final Note note;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final locale = Localizations.localeOf(context).toString();
+    final dateLabel = DateFormat.MMMd(locale).format(note.updatedAt);
+
+    final title = note.title.trim().isEmpty ? l10n.untitledNote : note.title;
+    final preview = note.isLocked
+        ? l10n.lockedNotePreview
+        : NoteContentCodec.plainTextPreview(note.contentJson);
+    final previewText = preview.isEmpty ? l10n.emptyNotePreview : preview;
+
+    return Material(
+      color: theme.cardTheme.color ?? scheme.surfaceContainerHigh,
+      borderRadius: AppRadii.card,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadii.card,
+        child: Ink(
+          decoration: BoxDecoration(
+            borderRadius: AppRadii.card,
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.4),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                    if (note.isLocked)
+                      Icon(
+                        Icons.lock_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.tealLight : AppColors.tealDark,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: Text(
+                    previewText,
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  dateLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

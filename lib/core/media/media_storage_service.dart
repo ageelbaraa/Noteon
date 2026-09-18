@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -23,7 +24,28 @@ class MediaStorageService {
 
   static const String imagesSubdirectory = 'images';
   static const String sketchesSubdirectory = 'sketches';
+  static const String audioSubdirectory = 'audio';
+  static const String inkSubdirectory = 'ink';
+  static const String pdfsSubdirectory = 'pdfs';
   static const String lockedSubdirectory = 'locked';
+
+  /// Infers [MediaRef.kind] from a relative path under the media root.
+  static String kindForRelativePath(String relativePath) {
+    final path = relativePath.replaceAll('\\', '/');
+    if (path.startsWith('$sketchesSubdirectory/')) {
+      return 'sketch';
+    }
+    if (path.startsWith('$audioSubdirectory/')) {
+      return 'audio';
+    }
+    if (path.startsWith('$inkSubdirectory/')) {
+      return 'ink';
+    }
+    if (path.startsWith('$pdfsSubdirectory/')) {
+      return 'pdf';
+    }
+    return 'image';
+  }
 
   /// Longest edge kept when resizing large photos.
   static const int maxEdge = 1600;
@@ -98,6 +120,115 @@ class MediaStorageService {
     return MediaRef()
       ..relativePath = relativePath
       ..kind = 'sketch'
+      ..createdAt = DateTime.now();
+  }
+
+  /// Imports recorded audio bytes under `audio/` (typically AAC/M4A).
+  Future<MediaRef> importAudioBytes(
+    Uint8List bytes, {
+    String extension = 'm4a',
+  }) async {
+    final ext = extension.replaceAll('.', '').trim().isEmpty
+        ? 'm4a'
+        : extension.replaceAll('.', '').trim();
+    final fileName = '${_uuid.v4()}.$ext';
+    final relativePath = '$audioSubdirectory/$fileName';
+    final destination = File(await absolutePathFor(relativePath));
+    await destination.parent.create(recursive: true);
+    await destination.writeAsBytes(bytes, flush: true);
+
+    return MediaRef()
+      ..relativePath = relativePath
+      ..kind = 'audio'
+      ..createdAt = DateTime.now();
+  }
+
+  /// Imports vector ink stroke JSON + PNG preview under `ink/{id}.*`.
+  ///
+  /// When [id] is provided, overwrites that ink pair (re-edit). Otherwise
+  /// allocates a new id.
+  Future<({MediaRef strokes, MediaRef preview, String id})> importInkBundle({
+    required String strokesJson,
+    required Uint8List previewPng,
+    String? id,
+  }) async {
+    final inkId = (id == null || id.trim().isEmpty) ? _uuid.v4() : id.trim();
+    final strokesPath = '$inkSubdirectory/$inkId.json';
+    final previewPath = '$inkSubdirectory/$inkId.png';
+
+    await writeBytesAtRelativePath(
+      strokesPath,
+      Uint8List.fromList(utf8.encode(strokesJson)),
+    );
+    await writeBytesAtRelativePath(previewPath, previewPng);
+
+    final now = DateTime.now();
+    return (
+      id: inkId,
+      strokes: MediaRef()
+        ..relativePath = strokesPath
+        ..kind = 'ink'
+        ..createdAt = now,
+      preview: MediaRef()
+        ..relativePath = previewPath
+        ..kind = 'ink'
+        ..createdAt = now,
+    );
+  }
+
+  /// Imports a PDF once under `pdfs/{id}.pdf` and ensures empty annotations exist.
+  ///
+  /// The PDF bytes are **never** rewritten on later annotation saves. Pass [id]
+  /// only when reopening an existing bundle (skips PDF write if file exists).
+  Future<({MediaRef pdf, MediaRef annotations, String id})> importPdfFile(
+    File source, {
+    String? id,
+  }) async {
+    final pdfId = (id == null || id.trim().isEmpty) ? _uuid.v4() : id.trim();
+    final pdfPath = '$pdfsSubdirectory/$pdfId.pdf';
+    final annPath = '$pdfsSubdirectory/$pdfId.ann.json';
+    final pdfAbs = await absolutePathFor(pdfPath);
+    final pdfFile = File(pdfAbs);
+
+    if (!await pdfFile.exists()) {
+      await pdfFile.parent.create(recursive: true);
+      await source.copy(pdfAbs);
+    }
+
+    final annFile = File(await absolutePathFor(annPath));
+    if (!await annFile.exists()) {
+      await writeBytesAtRelativePath(
+        annPath,
+        Uint8List.fromList(utf8.encode('{"version":1,"pages":{}}')),
+      );
+    }
+
+    final now = DateTime.now();
+    return (
+      id: pdfId,
+      pdf: MediaRef()
+        ..relativePath = pdfPath
+        ..kind = 'pdf'
+        ..createdAt = now,
+      annotations: MediaRef()
+        ..relativePath = annPath
+        ..kind = 'pdf'
+        ..createdAt = now,
+    );
+  }
+
+  /// Overwrites annotation JSON only — never touches the PDF source file.
+  Future<MediaRef> writePdfAnnotations({
+    required String annotationsRelativePath,
+    required String annotationsJson,
+  }) async {
+    await writeBytesAtRelativePath(
+      annotationsRelativePath,
+      Uint8List.fromList(utf8.encode(annotationsJson)),
+    );
+    return MediaRef()
+      ..relativePath = annotationsRelativePath.replaceAll('\\', '/')
+      ..kind = 'pdf'
       ..createdAt = DateTime.now();
   }
 
@@ -214,7 +345,7 @@ class MediaStorageService {
       }
       return MediaRef()
         ..relativePath = path
-        ..kind = path.startsWith('$sketchesSubdirectory/') ? 'sketch' : 'image'
+        ..kind = kindForRelativePath(path)
         ..createdAt = DateTime.now();
     }).toList();
   }

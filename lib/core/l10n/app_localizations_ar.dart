@@ -24,6 +24,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get folders => 'المجلدات';
 
   @override
+  String get subfolders => 'المجلدات الفرعية';
+
+  @override
   String get tags => 'الوسوم';
 
   @override
@@ -375,6 +378,55 @@ class AppLocalizationsAr extends AppLocalizations {
   String get clearCanvas => 'مسح';
 
   @override
+  String get sketchPen => 'قلم';
+
+  @override
+  String get sketchHighlighter => 'قلم تظليل';
+
+  @override
+  String get sketchEraser => 'ممحاة';
+
+  @override
+  String get sketchLasso => 'تحديد حر';
+
+  @override
+  String get inkDrawingLabel => 'رسم';
+
+  @override
+  String get inkDeleteSelected => 'حذف المحدد';
+
+  @override
+  String get inkLassoHint => 'ارسم حول الخطوط للتحديد، ثم اسحب للنقل.';
+
+  @override
+  String inkLassoSelected(int count) {
+    return '$count محدد — اسحب للنقل';
+  }
+
+  @override
+  String get addPdf => 'إضافة PDF';
+
+  @override
+  String get pdfDocumentLabel => 'مستند PDF';
+
+  @override
+  String get pdfTapToAnnotate => 'انقر مرتين أو عدّل للتعليق';
+
+  @override
+  String get pdfMissing => 'ملف PDF غير متاح';
+
+  @override
+  String get pdfImportFailed => 'تعذر إضافة ملف PDF. حاول مرة أخرى.';
+
+  @override
+  String get pdfAnnotateSaveFailed => 'تعذر حفظ التعليقات. حاول مرة أخرى.';
+
+  @override
+  String pdfPageLabel(int page) {
+    return 'صفحة $page';
+  }
+
+  @override
   String get insertTable => 'إدراج جدول';
 
   @override
@@ -391,6 +443,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get tableLabel => 'جدول';
+
+  @override
+  String get tableTitleHint => 'عنوان الجدول';
+
+  @override
+  String get tableTitleOptional => 'اختياري';
 
   @override
   String get tableActions => 'إجراءات الجدول';
@@ -418,18 +476,189 @@ class AppLocalizationsAr extends AppLocalizations {
       'سيُزال الجدول من الملاحظة. لا يمكن التراجع عن ذلك.';
 
   @override
-  String get editorZoomIn => 'تكبير';
+  String get notesViewList => 'عرض قائمة';
 
   @override
-  String get editorZoomOut => 'تصغير';
+  String get notesViewGrid => 'عرض شبكة';
 
   @override
-  String get editorZoomReset => 'إعادة تعيين التكبير';
+  String get blockMoveUp => 'تحريك لأعلى';
 
   @override
-  String editorZoomPercent(int percent) {
-    return '$percent%';
-  }
+  String get blockMoveDown => 'تحريك لأسفل';
+
+  @override
+  String get resizeImage => 'تغيير حجم الصورة';
+
+  @override
+  String get replaceImage => 'استبدال الصورة';
+
+  @override
+  String get editBlock => 'تعديل';
+
+  @override
+  String get resizeImageTitle => 'حجم الصورة';
+
+  @override
+  String get resizeImageMessage => 'اضبط حجم عرض الصورة. يُحتفظ بالملف الأصلي.';
+
+  @override
+  String get deleteBlockTitle => 'حذف هذا العنصر؟';
+
+  @override
+  String get deleteBlockMessage => 'يزيل هذا العنصر المحدد فقط من الملاحظة.';
+
+  @override
+  String get addAudio => 'إضافة صوت';
+
+  @override
+  String get recordAudioTitle => 'تسجيل صوت';
+
+  @override
+  String get recordAudioMessage =>
+      'اضغط تسجيل، ثم أدرج المقطع في هذه الملاحظة.';
+
+  @override
+  String get audioStartRecording => 'تسجيل';
+
+  @override
+  String get audioStop => 'إيقاف';
+
+  @override
+  String get insertAudio => 'إدراج';
+
+  @override
+  String get audioLabel => 'صوت';
+
+  @override
+  String get audioPlay => 'تشغيل';
+
+  @override
+  String get audioPause => 'إيقاف مؤقت';
+
+  @override
+  String get audioMissing => 'الصوت غير متاح';
+
+  @override
+  String get audioPlayFailed => 'تعذر تشغيل هذا الصوت.';
+
+  @override
+  String get audioRecordFailed => 'تعذر تسجيل الصوت. حاول مرة أخرى.';
+
+  @override
+  String get audioPermissionDenied =>
+      'تم رفض الوصول إلى الميكروفون. يمكنك تفعيله من إعدادات النظام.';
+
+  @override
+  String get shareNote => 'مشاركة';
+
+  @override
+  String get shareAsText => 'مشاركة كنص';
+
+  @override
+  String get shareAsImage => 'مشاركة كصورة';
+
+  @override
+  String get shareAsPdf => 'مشاركة كملف PDF';
+
+  @override
+  String get shareEmptyNote => 'ملاحظة فارغة';
+
+  @override
+  String get shareFailed => 'تعذر مشاركة هذه الملاحظة. حاول مرة أخرى.';
+
+  @override
+  String get ocrImage => 'نسخ النص من الصورة';
+
+  @override
+  String get ocrTitle => 'نص من الصورة';
+
+  @override
+  String get ocrInsert => 'إدراج في الملاحظة';
+
+  @override
+  String get ocrCopy => 'نسخ';
+
+  @override
+  String get ocrProgress => 'جارٍ قراءة النص…';
+
+  @override
+  String get ocrUnsupported =>
+      'التعرّف على النص على الجهاز متاح على Android و iOS.';
+
+  @override
+  String get ocrNoText => 'لم يُعثر على نص في هذه الصورة.';
+
+  @override
+  String get ocrFailed => 'تعذر قراءة النص من هذه الصورة.';
+
+  @override
+  String get ocrCopied => 'تم النسخ إلى الحافظة.';
+
+  @override
+  String get assistNote => 'مساعدة محلية';
+
+  @override
+  String get assistTidy => 'تنظيف المسافات';
+
+  @override
+  String get assistTidySubtitle =>
+      'إزالة المسافات والأسطر الفارغة الزائدة (التحديد).';
+
+  @override
+  String get assistBullets => 'تحويل إلى قائمة نقطية';
+
+  @override
+  String get assistBulletsSubtitle => 'جعل كل سطر نقطة قائمة (التحديد).';
+
+  @override
+  String get assistFirstLine => 'فصل السطر الأول';
+
+  @override
+  String get assistFirstLineSubtitle =>
+      'إضافة سطر فارغ بعد السطر الأول (التحديد).';
+
+  @override
+  String get assistSelectText => 'حدّد نصاً في الملاحظة أولاً.';
+
+  @override
+  String get assistApplied => 'طُبّق محلياً — لم يُرسل شيء إلى السحابة.';
+
+  @override
+  String get privacy => 'الخصوصية';
+
+  @override
+  String get privacyOcrTitle => 'تعرّف نص على الجهاز';
+
+  @override
+  String get privacyOcrSubtitle =>
+      'قراءة النص من الصور تعمل على هذا الهاتف. لا يُرفع شيء.';
+
+  @override
+  String get privacyAssistTitle => 'مساعدة محلية';
+
+  @override
+  String get privacyAssistSubtitle =>
+      'أدوات التنظيف والقوائم تعمل على الجهاز دون ذكاء اصطناعي سحابي.';
+
+  @override
+  String get privacyExportTitle => 'المشاركة والتصدير';
+
+  @override
+  String get privacyExportSubtitle =>
+      'ملفات PDF والمشاركات تبقى على جهازك حتى تختار تطبيقاً لإرسالها.';
+
+  @override
+  String get notePageBackground => 'خلفية صفحة الملاحظة';
+
+  @override
+  String get notePageBackgroundPlain => 'عادية';
+
+  @override
+  String get notePageBackgroundLined => 'مسطّرة';
+
+  @override
+  String get notePageBackgroundGrid => 'شبكة';
 
   @override
   String get backupTransfer => 'النسخ الاحتياطي والنقل';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:flutter_quill/quill_delta.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:noteon/features/notes/data/note_block_ops.dart';
 import 'package:noteon/features/notes/data/noteon_table_data.dart';
 import 'package:noteon/features/notes/presentation/noteon_table_embed.dart';
 
@@ -23,48 +23,9 @@ int countTableEmbeds(Document doc) {
   return count;
 }
 
-/// Mirrors [NoteEditorScreen._insertBlockEmbed] newline heuristics.
+/// Mirrors [NoteBlockOps.insertBlockEmbed] for table-specific tests.
 void insertBlockEmbed(QuillController controller, Embeddable embed) {
-  final document = controller.document;
-  var index = controller.selection.isValid
-      ? controller.selection.baseOffset
-      : document.length - 1;
-  index = index.clamp(0, document.length - 1);
-
-  final itr = DeltaIterator(document.toDelta());
-  final prev = index > 0 ? itr.skip(index) : null;
-  final cur = itr.next();
-  final textBefore =
-      prev != null && prev.data is String ? prev.data as String : '';
-  final textAfter = cur.data is String ? cur.data as String : '';
-  final isNewlineBefore = prev == null || textBefore.endsWith('\n');
-  final isNewlineAfter = textAfter.startsWith('\n');
-
-  if (!isNewlineBefore) {
-    controller.replaceText(
-      index,
-      0,
-      '\n',
-      TextSelection.collapsed(offset: index + 1),
-    );
-    index += 1;
-  }
-
-  controller.replaceText(
-    index,
-    0,
-    embed,
-    TextSelection.collapsed(offset: index + 1),
-  );
-
-  if (!isNewlineAfter) {
-    controller.replaceText(
-      index + 1,
-      0,
-      '\n',
-      TextSelection.collapsed(offset: index + 2),
-    );
-  }
+  NoteBlockOps.insertBlockEmbed(controller, embed);
 }
 
 void main() {

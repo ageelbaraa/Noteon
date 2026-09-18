@@ -9,19 +9,37 @@ import 'package:noteon/features/notes/presentation/noteon_table_embed.dart';
 void main() {
   group('NoteonTableData', () {
     test('round-trips json and preserves cell text', () {
-      final table = NoteonTableData.empty(rows: 2, columns: 3).copyWithCell(
+      final table = NoteonTableData.empty(rows: 2, columns: 3)
+          .copyWith(title: 'Schedule')
+          .copyWithCell(
             0,
             0,
             'Hello',
-          ).copyWithCell(1, 2, 'عالم');
+          )
+          .copyWithCell(1, 2, 'عالم');
 
       final restored = NoteonTableData.fromJsonString(table.toJsonString());
       expect(restored.rows, 2);
       expect(restored.columns, 3);
+      expect(restored.title, 'Schedule');
       expect(restored.cells[0][0], 'Hello');
       expect(restored.cells[1][2], 'عالم');
+      expect(restored.toPlainText(), contains('Schedule'));
       expect(restored.toPlainText(), contains('Hello'));
       expect(restored.toPlainText(), contains('عالم'));
+    });
+
+    test('missing title in legacy json defaults to empty', () {
+      final restored = NoteonTableData.fromJson({
+        'id': 'legacy-id',
+        'rows': 1,
+        'columns': 1,
+        'cells': [
+          ['a'],
+        ],
+      });
+      expect(restored.title, '');
+      expect(restored.cells[0][0], 'a');
     });
 
     test('add/remove row and column keep bounds', () {

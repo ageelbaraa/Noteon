@@ -13,7 +13,7 @@ class MediaRef {
   /// Path relative to the Noteon media root (e.g. `images/abc.jpg`).
   String relativePath = '';
 
-  /// Logical media kind: `image` or `sketch`.
+  /// Logical media kind: `image`, `sketch`, `audio`, `ink`, or `pdf`.
   String kind = 'image';
 
   DateTime? createdAt;

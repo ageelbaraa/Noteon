@@ -8,15 +8,45 @@ import '../../../core/l10n/app_localizations.dart';
 import '../../../core/providers/crypto_providers.dart';
 import '../../../core/providers/media_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/note_block_model.dart';
+import '../data/noteon_image_payload.dart';
+import 'note_block_chrome.dart';
+
+/// Callbacks for block selection / reordering (owned by the note editor).
+class NoteBlockInteraction {
+  const NoteBlockInteraction({
+    required this.selection,
+    required this.controller,
+    required this.onSelect,
+    required this.onAcceptDrop,
+  });
+
+  final ValueNotifier<NoteBlockSelection?> selection;
+  final QuillController controller;
+  final void Function(NoteBlock block) onSelect;
+  final void Function({required int fromIndex, required int toIndex})
+      onAcceptDrop;
+
+  int? indexForOffset(int offset, NoteBlockKind kind) {
+    final blocks = NoteBlockModel.listBlocks(controller.document);
+    for (var i = 0; i < blocks.length; i++) {
+      if (blocks[i].kind == kind && blocks[i].start == offset) {
+        return i;
+      }
+    }
+    return null;
+  }
+}
 
 /// Renders Noteon-local image embeds (relative paths under noteon_media).
-///
-/// When a note is unlocked in-memory, prefers decrypted bytes over disk files
-/// so plaintext media is not required on disk for locked notes.
 class NoteonImageEmbedBuilder extends EmbedBuilder {
-  const NoteonImageEmbedBuilder({this.noteId});
+  const NoteonImageEmbedBuilder({
+    this.noteId,
+    this.interaction,
+  });
 
   final int? noteId;
+  final NoteBlockInteraction? interaction;
 
   @override
   String get key => BlockEmbed.imageType;
@@ -26,22 +56,59 @@ class NoteonImageEmbedBuilder extends EmbedBuilder {
 
   @override
   Widget build(BuildContext context, EmbedContext embedContext) {
-    final relativePath = embedContext.node.value.data.trim();
+    final payload = NoteonImagePayload.decode(embedContext.node.value.data);
+    final relativePath = payload.path;
+    final offset = _imageOffset(
+          embedContext.controller.document,
+          relativePath,
+          embedContext.node.documentOffset,
+        ) ??
+        embedContext.node.documentOffset;
+
     return _NoteonEmbeddedImage(
       relativePath: relativePath,
+      displayWidth: payload.displayWidth,
       noteId: noteId,
+      documentOffset: offset,
+      readOnly: embedContext.readOnly,
+      interaction: interaction,
     );
+  }
+
+  static int? _imageOffset(Document document, String path, int hint) {
+    final blocks = NoteBlockModel.listBlocks(document);
+    for (final b in blocks) {
+      if (b.kind == NoteBlockKind.image &&
+          b.imagePath == path &&
+          (b.start - hint).abs() <= 2) {
+        return b.start;
+      }
+    }
+    for (final b in blocks) {
+      if (b.kind == NoteBlockKind.image && b.imagePath == path) {
+        return b.start;
+      }
+    }
+    return null;
   }
 }
 
 class _NoteonEmbeddedImage extends ConsumerWidget {
   const _NoteonEmbeddedImage({
     required this.relativePath,
+    required this.documentOffset,
+    required this.readOnly,
+    this.displayWidth,
     this.noteId,
+    this.interaction,
   });
 
   final String relativePath;
+  final double? displayWidth;
   final int? noteId;
+  final int documentOffset;
+  final bool readOnly;
+  final NoteBlockInteraction? interaction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,30 +122,75 @@ class _NoteonEmbeddedImage extends ConsumerWidget {
       sessionBytes = session.mediaBytes[relativePath];
     }
 
+    final Widget image;
     if (sessionBytes != null) {
-      return _buildImage(context, l10n, MemoryImage(sessionBytes));
+      image = _buildImage(context, l10n, MemoryImage(sessionBytes));
+    } else {
+      final media = ref.watch(mediaStorageProvider);
+      image = Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: FutureBuilder(
+          future: media.fileFor(relativePath),
+          builder: (context, snapshot) {
+            final file = snapshot.data;
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const SizedBox(
+                height: 120,
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              );
+            }
+            if (file == null) {
+              return _MissingImagePlaceholder(message: l10n.imageMissing);
+            }
+            return _buildImage(context, l10n, FileImage(file));
+          },
+        ),
+      );
     }
 
-    final media = ref.watch(mediaStorageProvider);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: FutureBuilder(
-        future: media.fileFor(relativePath),
-        builder: (context, snapshot) {
-          final file = snapshot.data;
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const SizedBox(
-              height: 120,
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            );
-          }
-          if (file == null) {
-            return _MissingImagePlaceholder(message: l10n.imageMissing);
-          }
+    final interaction = this.interaction;
+    if (readOnly || interaction == null) {
+      return image;
+    }
 
-          return _buildImage(context, l10n, FileImage(file));
-        },
-      ),
+    return ValueListenableBuilder<NoteBlockSelection?>(
+      valueListenable: interaction.selection,
+      builder: (context, selection, _) {
+        final selected = selection != null &&
+            selection.block.kind == NoteBlockKind.image &&
+            selection.block.start == documentOffset;
+        final blockIndex = interaction.indexForOffset(
+              documentOffset,
+              NoteBlockKind.image,
+            ) ??
+            0;
+
+        return NoteBlockChrome(
+          selected: selected,
+          blockIndex: blockIndex,
+          onAcceptDrop: (fromIndex) {
+            interaction.onAcceptDrop(
+              fromIndex: fromIndex,
+              toIndex: blockIndex,
+            );
+          },
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              interaction.onSelect(
+                NoteBlock(
+                  kind: NoteBlockKind.image,
+                  start: documentOffset,
+                  length: 1,
+                  imagePath: relativePath,
+                  displayWidth: displayWidth,
+                ),
+              );
+            },
+            child: image,
+          ),
+        );
+      },
     );
   }
 
@@ -89,16 +201,27 @@ class _NoteonEmbeddedImage extends ConsumerWidget {
   ) {
     final cacheWidth =
         (MediaQuery.sizeOf(context).width * 2).round().clamp(640, 2048);
+    final maxW = displayWidth;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ClipRRect(
-        borderRadius: AppRadii.card,
-        child: Image(
-          image: ResizeImage(provider, width: cacheWidth),
-          fit: BoxFit.contain,
-          errorBuilder: (_, _, _) =>
-              _MissingImagePlaceholder(message: l10n.imageMissing),
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Align(
+        alignment: Alignment.center,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: 240,
+            maxWidth: maxW ?? double.infinity,
+          ),
+          child: ClipRRect(
+            borderRadius: AppRadii.card,
+            child: Image(
+              image: ResizeImage(provider, width: cacheWidth),
+              fit: BoxFit.contain,
+              width: maxW,
+              errorBuilder: (_, _, _) =>
+                  _MissingImagePlaceholder(message: l10n.imageMissing),
+            ),
+          ),
         ),
       ),
     );

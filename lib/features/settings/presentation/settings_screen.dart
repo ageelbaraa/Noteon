@@ -83,6 +83,58 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
             NoteonSectionHeader(
+              title: l10n.notePageBackground,
+              padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
+            ),
+            NoteonGroupSurface(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 14, 12, 14),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final compact = constraints.maxWidth < 340;
+                      final pageBg = ref.watch(notePageBackgroundProvider);
+                      return SegmentedButton<NotePageBackground>(
+                        showSelectedIcon: false,
+                        segments: [
+                          ButtonSegment(
+                            value: NotePageBackground.plain,
+                            label: compact
+                                ? null
+                                : Text(l10n.notePageBackgroundPlain),
+                            icon: const Icon(Icons.crop_square_outlined),
+                            tooltip: l10n.notePageBackgroundPlain,
+                          ),
+                          ButtonSegment(
+                            value: NotePageBackground.lined,
+                            label: compact
+                                ? null
+                                : Text(l10n.notePageBackgroundLined),
+                            icon: const Icon(Icons.notes_rounded),
+                            tooltip: l10n.notePageBackgroundLined,
+                          ),
+                          ButtonSegment(
+                            value: NotePageBackground.grid,
+                            label: compact
+                                ? null
+                                : Text(l10n.notePageBackgroundGrid),
+                            icon: const Icon(Icons.grid_on_rounded),
+                            tooltip: l10n.notePageBackgroundGrid,
+                          ),
+                        ],
+                        selected: {pageBg},
+                        onSelectionChanged: (value) {
+                          ref
+                              .read(notePageBackgroundProvider.notifier)
+                              .setBackground(value.first);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            NoteonSectionHeader(
               title: l10n.language,
               padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
             ),
@@ -168,6 +220,31 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: Text(l10n.nearbyReceiveSubtitle),
                   onTap: () =>
                       BackupTransferActions.receiveNearby(context, ref),
+                ),
+              ],
+            ),
+            NoteonSectionHeader(
+              title: l10n.privacy,
+              padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
+            ),
+            NoteonGroupSurface(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.document_scanner_outlined),
+                  title: Text(l10n.privacyOcrTitle),
+                  subtitle: Text(l10n.privacyOcrSubtitle),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.short_text_rounded),
+                  title: Text(l10n.privacyAssistTitle),
+                  subtitle: Text(l10n.privacyAssistSubtitle),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.ios_share_outlined),
+                  title: Text(l10n.privacyExportTitle),
+                  subtitle: Text(l10n.privacyExportSubtitle),
                 ),
               ],
             ),

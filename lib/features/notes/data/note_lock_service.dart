@@ -213,9 +213,7 @@ class NoteLockService {
       if (bytes == null) {
         continue;
       }
-      final kind = path.startsWith('${MediaStorageService.sketchesSubdirectory}/')
-          ? 'sketch'
-          : 'image';
+      final kind = MediaStorageService.kindForRelativePath(path);
       // Persist plaintext under the same logical path when possible.
       await _media.writeBytesAtRelativePath(path, bytes);
       writtenRefs.add(
@@ -261,11 +259,7 @@ class NoteLockService {
     final refreshedBytes = <String, Uint8List>{};
 
     for (final logicalPath in livePaths) {
-      var kind = logicalPath.startsWith(
-              '${MediaStorageService.sketchesSubdirectory}/',
-            )
-          ? 'sketch'
-          : 'image';
+      var kind = MediaStorageService.kindForRelativePath(logicalPath);
       for (final ref in mediaRefs) {
         if (ref.relativePath == logicalPath) {
           kind = ref.kind;
