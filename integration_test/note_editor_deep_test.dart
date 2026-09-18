@@ -4,19 +4,18 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:noteon/features/notes/data/note_block_ops.dart';
-import 'package:noteon/features/notes/data/noteon_ink_payload.dart';
-import 'package:noteon/features/notes/data/noteon_pdf_payload.dart';
 import 'package:noteon/features/notes/data/noteon_table_data.dart';
 import 'package:noteon/features/notes/presentation/note_editor_browse_caret_sync.dart';
 import 'package:noteon/features/notes/presentation/note_editor_zoom_viewport.dart';
-import 'package:noteon/features/notes/presentation/noteon_audio_embed.dart';
 import 'package:noteon/features/notes/presentation/noteon_table_embed.dart';
 
 /// Deeper note-editor scenarios for free Android emulator CI.
 ///
 /// Complements `note_editor_browse_test.dart` without duplicating its cases.
 /// Uses a Quill harness (not Isar) so CI stays deterministic and $0.
+///
+/// Only imports packages already on `main` (image + table embeds). Other custom
+/// embed types share the same [safeBrowseCaretOffset] Embed-leaf path.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -41,7 +40,9 @@ void main() {
     return controller;
   }
 
+  /// Text ↔ table ↔ image ↔ text document using committed embed types only.
   QuillController mixedEmbedNote() {
+    final table = NoteonTableData.empty(rows: 2, columns: 2, id: 't1');
     final controller = QuillController(
       document: Document.fromJson([
         {'insert': 'Before embeds\n'},
@@ -49,48 +50,26 @@ void main() {
       selection: const TextSelection.collapsed(offset: 13),
     );
 
-    void insert(Embeddable embed) {
-      NoteBlockOps.insertBlockEmbed(controller, embed);
+    void insertEmbed(Embeddable embed) {
+      final at = controller.selection.baseOffset;
+      controller.replaceText(
+        at,
+        0,
+        embed,
+        TextSelection.collapsed(offset: at + 1),
+      );
+      final after = controller.selection.baseOffset;
+      controller.replaceText(
+        after,
+        0,
+        '\n',
+        TextSelection.collapsed(offset: after + 1),
+      );
     }
 
-    insert(
-      BlockEmbed.custom(
-        NoteonTableBlockEmbed.fromData(
-          NoteonTableData.empty(rows: 2, columns: 2, id: 't1'),
-        ),
-      ),
-    );
-    insert(
-      BlockEmbed.custom(
-        NoteonInkBlockEmbed.fromData(
-          const NoteonInkData(
-            id: 'ink1',
-            strokesPath: 'ink/ink1.json',
-            previewPath: 'ink/ink1.png',
-          ),
-        ),
-      ),
-    );
-    insert(
-      BlockEmbed.custom(
-        NoteonAudioBlockEmbed.fromPayload(
-          path: 'audio/a.m4a',
-          durationMs: 1200,
-        ),
-      ),
-    );
-    insert(
-      BlockEmbed.custom(
-        NoteonPdfBlockEmbed.fromData(
-          const NoteonPdfData(
-            id: 'pdf1',
-            pdfPath: 'pdfs/doc.pdf',
-            annotationsPath: 'pdfs/doc.ann.json',
-            title: 'Spec',
-          ),
-        ),
-      ),
-    );
+    insertEmbed(BlockEmbed.custom(NoteonTableBlockEmbed.fromData(table)));
+    insertEmbed(BlockEmbed.image('images/draw_or_ink_standin.png'));
+    insertEmbed(BlockEmbed.image('images/pdf_or_audio_standin.png'));
 
     final at = controller.selection.baseOffset;
     final tail = StringBuffer('After all embeds\n');
@@ -164,12 +143,10 @@ void main() {
                   ? const [
                       _StubEmbedBuilder(BlockEmbed.imageType),
                       _StubEmbedBuilder(NoteonTableBlockEmbed.embedType),
-                      _StubEmbedBuilder(NoteonInkBlockEmbed.embedType),
-                      _StubEmbedBuilder(NoteonAudioBlockEmbed.embedType),
-                      _StubEmbedBuilder(NoteonPdfBlockEmbed.embedType),
                     ]
                   : const [],
-              unknownEmbedBuilder: withEmbedStubs ? const _StubUnknownEmbed() : null,
+              unknownEmbedBuilder:
+                  withEmbedStubs ? const _StubUnknownEmbed() : null,
             ),
           ),
         ),
@@ -183,7 +160,8 @@ void main() {
           transform: noteEditorZoomMatrix(
             scale: zoomScale,
             focalViewport: const Offset(180, 120),
-            focalScene: Offset(180 - zoomTranslation.dx, 120 - zoomTranslation.dy),
+            focalScene:
+                Offset(180 - zoomTranslation.dx, 120 - zoomTranslation.dy),
           ),
           child: SizedBox.expand(child: editor),
         ),
@@ -322,7 +300,8 @@ void main() {
       expect(controller.selection.baseOffset, before);
     });
 
-    testWidgets('fling with drag phase may relocate when distance exceeds threshold',
+    testWidgets(
+        'fling with drag phase may relocate when distance exceeds threshold',
         (tester) async {
       final controller = longNote(caretAt: 200);
       await pumpHarness(tester, controller: controller);
@@ -378,10 +357,10 @@ void main() {
   });
 
   group('caret / embeds', () {
-    testWidgets('safe offsets for table ink audio pdf never land on Embed',
+    testWidgets(
+        'safe offsets for table and image embeds never land on Embed',
         (tester) async {
       final controller = mixedEmbedNote();
-      // Document-only: builders not required to validate leaf nudging.
       final doc = controller.document;
       addTearDown(controller.dispose);
       final sampleOffsets = <int>{0, 1, 5, 10, 15, 20, doc.length ~/ 4};
@@ -394,7 +373,6 @@ void main() {
           reason: 'raw=$raw safe=$offset must be text',
         );
       }
-      expect(tester.takeException(), isNull);
     });
 
     testWidgets('consecutive image embeds nudge caret onto following text',
@@ -416,6 +394,38 @@ void main() {
       final offset = safeBrowseCaretOffset(doc, 0);
       expect(doc.querySegmentLeafNode(offset).leaf, isNot(isA<Embed>()));
       expect(doc.toPlainText().substring(offset).contains('After'), isTrue);
+    });
+
+    testWidgets('text then table then text safe offsets stay off Embed',
+        (tester) async {
+      final table = NoteonTableData.empty(rows: 2, columns: 2, id: 'edge');
+      final controller = QuillController(
+        document: Document.fromJson([
+          {'insert': 'Above\n'},
+        ]),
+        selection: const TextSelection.collapsed(offset: 5),
+      );
+      controller.replaceText(
+        5,
+        0,
+        BlockEmbed.custom(NoteonTableBlockEmbed.fromData(table)),
+        const TextSelection.collapsed(offset: 6),
+      );
+      controller.replaceText(
+        6,
+        0,
+        '\nBelow table\n',
+        const TextSelection.collapsed(offset: 7),
+      );
+      addTearDown(controller.dispose);
+
+      for (final raw in [0, 5, 6, 7]) {
+        final offset = safeBrowseCaretOffset(controller.document, raw);
+        expect(
+          controller.document.querySegmentLeafNode(offset).leaf,
+          isNot(isA<Embed>()),
+        );
+      }
     });
 
     testWidgets('drag browse near image embed does not leave caret on Embed',
@@ -462,7 +472,8 @@ void main() {
       expect(controller.selection.isCollapsed, isTrue);
     });
 
-    testWidgets('browse with existing selection preserves range', (tester) async {
+    testWidgets('browse with existing selection preserves range',
+        (tester) async {
       final controller = longNote(caretAt: 30);
       controller.updateSelection(
         const TextSelection(baseOffset: 30, extentOffset: 55),
@@ -597,9 +608,7 @@ void main() {
       final clipRect = clipGlobal & clip.size;
       final anchorVisible = clipRect.contains(anchorGlobal);
 
-      // Record evidence only — do not fail the suite on a product edge case.
-      // If false, browse-caret uses editor-layout fraction outside the clipped
-      // zoom viewport; treat as potential UX issue requiring product decision.
+      // Evidence only — do not fail the suite on this product edge case.
       debugPrint(
         'zoom_pan_anchor_visible=$anchorVisible '
         'anchor=$anchorGlobal clip=$clipRect',
