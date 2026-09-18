@@ -17,6 +17,11 @@ if [ ${#tests[@]} -eq 0 ]; then
 fi
 
 for f in "${tests[@]}"; do
+  # Soft geometry probes — run locally; skip on emulator to save minutes.
+  if [[ "$f" == *investigation* ]]; then
+    echo "=== skip $f (investigation-only) ===" | tee -a build/ci/emulator_tests.stderr
+    continue
+  fi
   echo "=== $f ===" | tee -a build/ci/emulator_tests.stderr
   set +e
   flutter test "$f" -d emulator-5554 --machine \
