@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:noteon/features/notes/data/noteon_table_data.dart';
 import 'package:noteon/features/notes/presentation/note_editor_browse_caret_sync.dart';
-import 'package:noteon/features/notes/presentation/note_editor_zoom_viewport.dart';
 import 'package:noteon/features/notes/presentation/noteon_table_embed.dart';
 
 /// Deeper note-editor scenarios for free Android emulator CI.
@@ -154,15 +153,17 @@ void main() {
     );
 
     if (wrapZoom) {
-      // Mirrors production ClipRect + Transform without private zoom state.
+      // Mirrors production ClipRect + Transform (T*S*T(-scene)) without
+      // depending on uncommitted zoom helper exports.
+      final focal = const Offset(180, 120);
+      final scene = Offset(180 - zoomTranslation.dx, 120 - zoomTranslation.dy);
+      final matrix = Matrix4.identity()
+        ..translateByDouble(focal.dx, focal.dy, 0, 1)
+        ..scaleByDouble(zoomScale, zoomScale, 1, 1)
+        ..translateByDouble(-scene.dx, -scene.dy, 0, 1);
       editor = ClipRect(
         child: Transform(
-          transform: noteEditorZoomMatrix(
-            scale: zoomScale,
-            focalViewport: const Offset(180, 120),
-            focalScene:
-                Offset(180 - zoomTranslation.dx, 120 - zoomTranslation.dy),
-          ),
+          transform: matrix,
           child: SizedBox.expand(child: editor),
         ),
       );
