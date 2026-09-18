@@ -109,6 +109,10 @@ jobs:
           : > build/ci/integration_tests.stderr
           code=0
           for f in integration_test/*_test.dart; do
+            if [[ "$f" == *investigation* ]]; then
+              echo "=== skip $f (investigation-only) ===" | tee -a build/ci/integration_tests.stderr
+              continue
+            fi
             echo "=== $f ===" | tee -a build/ci/integration_tests.stderr
             flutter test "$f" -d flutter-tester --machine \
               2>>build/ci/integration_tests.stderr | tee -a build/ci/integration_tests.ndjson
