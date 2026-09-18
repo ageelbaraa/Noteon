@@ -1,0 +1,14 @@
+# Initial Firebase Test Lab Android device matrix for Noteon.
+#
+# Keep this small — free/Spark quota is limited. Expand later by appending rows.
+#
+# Format consumed by .github/workflows/ci.yml (one --device flag per MODEL line):
+#   MODEL=<ftl-model-id> VERSION=<api> ORIENTATION=<portrait|landscape> LOCALE=<lang> KIND=<virtual|physical> WHY=<text>
+#
+# Catalog tip (requires gcloud auth against noteon-app):
+#   gcloud firebase test android models list --project=noteon-app
+
+MODEL=MediumPhone.arm VERSION=33 ORIENTATION=portrait LOCALE=en KIND=virtual WHY=Common modern mid-size phone (virtual, API 33)
+MODEL=SmallPhone.arm VERSION=33 ORIENTATION=portrait LOCALE=en KIND=virtual WHY=Smaller screen coverage for layout/scroll edge cases
+MODEL=Pixel6.arm VERSION=33 ORIENTATION=portrait LOCALE=en KIND=virtual WHY=Larger flagship-class virtual device (Pixel 6 ARM)
+MODEL=oriole VERSION=32 ORIENTATION=portrait LOCALE=en KIND=physical WHY=Physical Pixel 6 when FTL physical quota allows

@@ -1,0 +1,448 @@
+name: CI
+
+# Noteon cloud testing pipeline:
+#   analyze → host unit/widget tests → host integration tests → Android APKs
+#   → (optional) Firebase Test Lab → AI-readable summary artifact
+#
+# FTL requires GitHub secret GCP_SA_KEY (see docs/CI_CLOUD_TESTING.md).
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_firebase_test_lab:
+        description: Run Firebase Test Lab (needs GCP_SA_KEY)
+        type: boolean
+        default: false
+      ftl_physical:
+        description: Include physical devices from the matrix
+        type: boolean
+        default: true
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.41.7"
+  # Matches android/app/google-services.json. Override via repo variable if needed
+  # by editing this workflow or setting a custom env in a fork.
+  FIREBASE_PROJECT_ID: noteon-app
+  RESULTS_BUCKET: noteon-app-ftl-results
+
+jobs:
+  analyze-and-test:
+    name: Analyze + host tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      flutter_version: ${{ steps.versions.outputs.flutter }}
+      dart_version: ${{ steps.versions.outputs.dart }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Versions
+        id: versions
+        run: |
+          echo "flutter=$(flutter --version | head -n1 | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+          echo "dart=$(dart --version 2>&1 | awk '{print $4}')" >> "$GITHUB_OUTPUT"
+          flutter --version | tee build-versions.txt
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: flutter analyze
+        run: |
+          mkdir -p build/ci
+          set +e
+          flutter analyze --no-fatal-infos 2>&1 | tee build/ci/analyze.txt
+          code=${PIPESTATUS[0]}
+          set -e
+          # Infos are allowed; fail only on analyzer errors/warnings that
+          # flutter reports as non-zero (with --no-fatal-infos, infos => 0).
+          if [ "$code" -ne 0 ]; then
+            echo "::error::flutter analyze failed (exit $code). See build/ci/analyze.txt"
+            exit "$code"
+          fi
+          # Treat "error •" / "error -" lines as failures even if exit was 0.
+          if grep -E "error •|error -" build/ci/analyze.txt >/dev/null; then
+            echo "::error::Analyzer reported errors"
+            exit 1
+          fi
+          echo "Analyze OK (infos may be present)"
+          exit 0
+
+      - name: Host unit/widget tests
+        run: |
+          mkdir -p build/ci
+          set +e
+          flutter test test --machine 2>build/ci/host_tests.stderr | tee build/ci/host_tests.ndjson
+          code=${PIPESTATUS[0]}
+          set -e
+          exit $code
+
+      - name: Host integration tests
+        run: |
+          mkdir -p build/ci
+          set +e
+          # Run files sequentially on flutter-tester — parallel launches are flaky
+          # on some hosts ("Failed to launch … log reader failed").
+          : > build/ci/integration_tests.ndjson
+          : > build/ci/integration_tests.stderr
+          code=0
+          for f in integration_test/*_test.dart; do
+            echo "=== $f ===" | tee -a build/ci/integration_tests.stderr
+            flutter test "$f" -d flutter-tester --machine \
+              2>>build/ci/integration_tests.stderr | tee -a build/ci/integration_tests.ndjson
+            c=${PIPESTATUS[0]}
+            if [ "$c" -ne 0 ]; then code=$c; fi
+          done
+          set -e
+          exit $code
+
+      - name: Summarize (partial)
+        if: always()
+        run: |
+          dart run tool/ci/summarize_ci.dart \
+            --host-json build/ci/host_tests.ndjson \
+            --integration-json build/ci/integration_tests.ndjson \
+            --analyze-log build/ci/analyze.txt \
+            --flutter-version "${{ steps.versions.outputs.flutter }}" \
+            --dart-version "${{ steps.versions.outputs.dart }}" \
+            --out build/ci/summary
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            build/ci/
+            build-versions.txt
+          if-no-files-found: warn
+
+  build-android:
+    name: Build Android APKs
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Build debug app APK
+        run: flutter build apk --debug
+
+      - name: Build instrumentation test APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew app:assembleDebug app:assembleAndroidTest --stacktrace
+
+      - name: Stage APKs
+        run: |
+          mkdir -p build/ci/apks
+          cp build/app/outputs/flutter-apk/app-debug.apk build/ci/apks/app-debug.apk
+          # Gradle androidTest output path
+          TEST_APK=$(find build/app/outputs/apk -name '*androidTest*.apk' | head -n1)
+          echo "TEST_APK=$TEST_APK"
+          cp "$TEST_APK" build/ci/apks/app-debug-androidTest.apk
+          ls -la build/ci/apks
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apks
+          path: build/ci/apks/
+          if-no-files-found: error
+
+  firebase-test-lab:
+    name: Firebase Test Lab
+    needs: [analyze-and-test, build-android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    # Manual dispatch, or main push when ENABLE_FIREBASE_TEST_LAB=true.
+    if: >
+      (github.event_name == 'workflow_dispatch' &&
+       github.event.inputs.run_firebase_test_lab == 'true') ||
+      (github.event_name == 'push' &&
+       github.ref == 'refs/heads/main' &&
+       vars.ENABLE_FIREBASE_TEST_LAB == 'true')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require GCP_SA_KEY
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          if [ -z "$GCP_SA_KEY" ]; then
+            echo "::error::Missing GitHub secret GCP_SA_KEY. See docs/CI_CLOUD_TESTING.md"
+            echo '{"status":"FAIL","reason":"Missing GCP_SA_KEY secret","devices":[],"failures":[{"testName":"firebase_test_lab","device":"n/a","error":"GCP_SA_KEY not configured","classification":"infrastructure","confidence":"high","artifactHints":[]}],"scenarios":["✗ Firebase Test Lab blocked: missing GCP_SA_KEY"],"artifacts":[]}' > ftl_result.json
+            mkdir -p build/ci
+            mv ftl_result.json build/ci/ftl_result.json
+            exit 1
+          fi
+
+      - name: Download APKs
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apks
+          path: build/ci/apks
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Ensure results bucket
+        run: |
+          if ! gsutil ls -b "gs://${RESULTS_BUCKET}" >/dev/null 2>&1; then
+            gsutil mb -p "${FIREBASE_PROJECT_ID}" -l us-central1 "gs://${RESULTS_BUCKET}" || true
+          fi
+
+      - name: Build device args from matrix
+        id: matrix
+        run: |
+          INCLUDE_PHYSICAL="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.ftl_physical || 'true' }}"
+          echo "INCLUDE_PHYSICAL=$INCLUDE_PHYSICAL"
+          DEVICE_ARGS=""
+          DEVICES_JSON="["
+          FIRST=1
+          while IFS= read -r line || [ -n "$line" ]; do
+            case "$line" in
+              ''|\#*) continue ;;
+            esac
+            MODEL=$(echo "$line" | sed -n 's/.*MODEL=\([^ ]*\).*/\1/p')
+            VERSION=$(echo "$line" | sed -n 's/.*VERSION=\([^ ]*\).*/\1/p')
+            ORIENTATION=$(echo "$line" | sed -n 's/.*ORIENTATION=\([^ ]*\).*/\1/p')
+            LOCALE=$(echo "$line" | sed -n 's/.*LOCALE=\([^ ]*\).*/\1/p')
+            KIND=$(echo "$line" | sed -n 's/.*KIND=\([^ ]*\).*/\1/p')
+            WHY=$(echo "$line" | sed -n 's/.*WHY=\(.*\)$/\1/p')
+            if [ "$KIND" = "physical" ] && [ "$INCLUDE_PHYSICAL" != "true" ]; then
+              echo "Skipping physical device $MODEL"
+              continue
+            fi
+            ARG="model=${MODEL},version=${VERSION},locale=${LOCALE},orientation=${ORIENTATION}"
+            DEVICE_ARGS="${DEVICE_ARGS} --device ${ARG}"
+            if [ $FIRST -eq 0 ]; then DEVICES_JSON="${DEVICES_JSON},"; fi
+            FIRST=0
+            DEVICES_JSON="${DEVICES_JSON}\"${MODEL} API${VERSION} (${KIND}): ${WHY}\""
+          done < firebase/testlab/android-devices.txt
+          DEVICES_JSON="${DEVICES_JSON}]"
+          {
+            echo "device_args<<EOF"
+            echo "$DEVICE_ARGS"
+            echo "EOF"
+            echo "devices_json=$DEVICES_JSON"
+          } >> "$GITHUB_OUTPUT"
+          echo "Devices:$DEVICE_ARGS"
+
+      - name: Run Firebase Test Lab
+        id: ftl
+        continue-on-error: true
+        run: |
+          mkdir -p build/ci/ftl
+          RESULTS_DIR="gh-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          set +e
+          # shellcheck disable=SC2086
+          gcloud firebase test android run \
+            --project="${FIREBASE_PROJECT_ID}" \
+            --type instrumentation \
+            --app build/ci/apks/app-debug.apk \
+            --test build/ci/apks/app-debug-androidTest.apk \
+            --timeout 15m \
+            --results-bucket="gs://${RESULTS_BUCKET}" \
+            --results-dir="${RESULTS_DIR}" \
+            --num-flaky-test-attempts=1 \
+            ${{ steps.matrix.outputs.device_args }} \
+            2>&1 | tee build/ci/ftl/gcloud.log
+          code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          echo "results_dir=$RESULTS_DIR" >> "$GITHUB_OUTPUT"
+          exit $code
+
+      - name: Pull FTL artifacts from GCS
+        if: always()
+        run: |
+          mkdir -p build/ci/ftl/results
+          RESULTS_DIR="${{ steps.ftl.outputs.results_dir }}"
+          if [ -n "$RESULTS_DIR" ]; then
+            gsutil -m cp -r "gs://${RESULTS_BUCKET}/${RESULTS_DIR}/**" build/ci/ftl/results/ || true
+          fi
+          find build/ci/ftl -type f | head -n 100
+
+      - name: Write ftl_result.json
+        if: always()
+        env:
+          FTL_EXIT: ${{ steps.ftl.outputs.exit_code }}
+          DEVICES_JSON: ${{ steps.matrix.outputs.devices_json }}
+        run: |
+          python3 <<'PY'
+          import json, os, pathlib, re
+          log = pathlib.Path("build/ci/ftl/gcloud.log")
+          text = log.read_text(errors="replace") if log.exists() else ""
+          exit_code = os.environ.get("FTL_EXIT") or "1"
+          status = "PASS" if exit_code == "0" else "FAIL"
+          devices = json.loads(os.environ.get("DEVICES_JSON") or "[]")
+          failures = []
+          scenarios = []
+          if status == "PASS":
+              scenarios.append("✓ Firebase Test Lab instrumentation suite")
+          else:
+              scenarios.append("✗ Firebase Test Lab instrumentation suite")
+              # Heuristic classification for AI agents
+              classification = "unknown"
+              confidence = "low"
+              low = text.lower()
+              if "permission" in low or "not enabled" in low or "403" in low:
+                  classification, confidence = "infrastructure", "high"
+              elif "timed out" in low or "timeout" in low:
+                  classification, confidence = "flaky", "medium"
+              elif "failed to find" in low or "instrumentation" in low:
+                  classification, confidence = "test_bug", "medium"
+              elif "error" in low:
+                  classification, confidence = "application_bug", "low"
+              excerpt = "\n".join(text.strip().splitlines()[-80:])
+              failures.append({
+                  "testName": "firebase_test_lab_instrumentation",
+                  "device": "matrix",
+                  "suite": "ftl",
+                  "error": excerpt or f"gcloud exited {exit_code}",
+                  "stack": excerpt,
+                  "logExcerpt": excerpt,
+                  "classification": classification,
+                  "confidence": confidence,
+                  "artifactHints": [
+                      "ftl-results/",
+                      "build/ci/ftl/gcloud.log",
+                  ],
+              })
+          # Collect screenshot/video hints
+          arts = []
+          root = pathlib.Path("build/ci/ftl/results")
+          if root.exists():
+              for p in root.rglob("*"):
+                  if p.suffix.lower() in {".png", ".jpg", ".mp4", ".webm", ".txt", ".xml"}:
+                      arts.append(str(p).replace("\\", "/"))
+          out = {
+              "status": status,
+              "summary": f"gcloud exit {exit_code}",
+              "reason": None if status == "PASS" else "See failures and gcloud.log",
+              "devices": devices,
+              "scenarios": scenarios,
+              "failures": failures,
+              "artifacts": arts[:200],
+              "resultsDir": os.environ.get("RESULTS_DIR") or "",
+          }
+          pathlib.Path("build/ci").mkdir(parents=True, exist_ok=True)
+          pathlib.Path("build/ci/ftl_result.json").write_text(json.dumps(out, indent=2))
+          print(json.dumps(out, indent=2)[:2000])
+          PY
+
+      - name: Upload FTL artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ftl-results
+          path: |
+            build/ci/ftl/
+            build/ci/ftl_result.json
+          if-no-files-found: warn
+
+      - name: Fail job if FTL failed
+        if: steps.ftl.outcome != 'success'
+        run: exit 1
+
+  report:
+    name: Publish CI report
+    needs: [analyze-and-test, build-android, firebase-test-lab]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter (for dart)
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Download test logs
+        uses: actions/download-artifact@v4
+        with:
+          name: test-logs
+          path: build/ci/from-tests
+
+      - name: Download FTL results (optional)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: ftl-results
+          path: build/ci/from-ftl
+
+      - name: Normalize inputs for summarizer
+        run: |
+          mkdir -p build/ci
+          cp -f build/ci/from-tests/build/ci/host_tests.ndjson build/ci/host_tests.ndjson 2>/dev/null || \
+            cp -f build/ci/from-tests/host_tests.ndjson build/ci/host_tests.ndjson 2>/dev/null || true
+          cp -f build/ci/from-tests/build/ci/integration_tests.ndjson build/ci/integration_tests.ndjson 2>/dev/null || \
+            cp -f build/ci/from-tests/integration_tests.ndjson build/ci/integration_tests.ndjson 2>/dev/null || true
+          cp -f build/ci/from-tests/build/ci/analyze.txt build/ci/analyze.txt 2>/dev/null || \
+            cp -f build/ci/from-tests/analyze.txt build/ci/analyze.txt 2>/dev/null || true
+          cp -f build/ci/from-ftl/ftl_result.json build/ci/ftl_result.json 2>/dev/null || \
+            cp -f build/ci/from-ftl/build/ci/ftl_result.json build/ci/ftl_result.json 2>/dev/null || true
+          ls -laR build/ci | head -n 80
+
+      - name: Generate final report
+        run: |
+          flutter pub get
+          dart run tool/ci/summarize_ci.dart \
+            --host-json build/ci/host_tests.ndjson \
+            --integration-json build/ci/integration_tests.ndjson \
+            --analyze-log build/ci/analyze.txt \
+            --ftl-json build/ci/ftl_result.json \
+            --flutter-version "${{ needs.analyze-and-test.outputs.flutter_version }}" \
+            --dart-version "${{ needs.analyze-and-test.outputs.dart_version }}" \
+            --out build/ci/summary
+          cat build/ci/summary/CI_REPORT.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload CI summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-summary
+          path: build/ci/summary/
+          if-no-files-found: warn

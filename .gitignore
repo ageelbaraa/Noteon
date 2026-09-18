@@ -87,6 +87,7 @@ app.*.map.json
 # Firebase / distribution secrets (never commit)
 **/serviceAccount*.json
 **/*-firebase-adminsdk*.json
+**/noteon-ftl-key.json
 **/google-services-private.json
 .distribution/
 distribution/apps.local.env
