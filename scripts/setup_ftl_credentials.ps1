@@ -30,14 +30,8 @@ gcloud services enable `
   --project=$Project
 
 Write-Host "==> Ensure service account $SaEmail"
-$exists = $false
-try {
-  gcloud iam service-accounts describe $SaEmail --project=$Project | Out-Null
-  $exists = $true
-} catch {
-  $exists = $false
-}
-if (-not $exists) {
+$desc = & gcloud iam service-accounts describe $SaEmail --project=$Project 2>&1
+if ($LASTEXITCODE -ne 0) {
   gcloud iam service-accounts create $SaName `
     --display-name="Noteon Firebase Test Lab CI" `
     --project=$Project
@@ -62,7 +56,7 @@ if (Test-Path $KeyPath) { Remove-Item $KeyPath -Force }
 gcloud iam service-accounts keys create $KeyPath `
   --iam-account=$SaEmail `
   --project=$Project
-gh secret set GCP_SA_KEY --repo $Repo --body "$(Get-Content -Raw $KeyPath)"
+Get-Content -Raw $KeyPath | gh secret set GCP_SA_KEY --repo $Repo
 Remove-Item $KeyPath -Force
 
 Write-Host "==> Optional: enable FTL on every main push"
