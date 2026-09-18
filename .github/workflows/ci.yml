@@ -86,7 +86,8 @@ jobs:
         run: |
           mkdir -p build/ci
           set +e
-          flutter test test --machine 2>build/ci/host_tests.stderr | tee build/ci/host_tests.ndjson
+          # -j 1 avoids races when Isar.initializeIsarCore(download: true) runs.
+          flutter test test -j 1 --machine 2>build/ci/host_tests.stderr | tee build/ci/host_tests.ndjson
           code=${PIPESTATUS[0]}
           set -e
           exit $code

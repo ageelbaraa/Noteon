@@ -429,13 +429,15 @@ bool _looksWidget(String name, String url) {
 (String, String) _classify(String error, String stack, String url) {
   final e = error.toLowerCase();
   final s = stack.toLowerCase();
-  if (e.contains('socketexception') ||
+  if (e.contains('libisar') ||
+      e.contains('failed to load dynamic library') ||
+      e.contains('socketexception') ||
       e.contains('gradle') ||
       e.contains('sdk') ||
       e.contains('license') ||
       e.contains('gcloud') ||
       e.contains('permission denied')) {
-    return ('infrastructure', 'medium');
+    return ('infrastructure', 'high');
   }
   if (e.contains('timeout') || e.contains('pumpandsettle timed out')) {
     return ('flaky', 'low');
