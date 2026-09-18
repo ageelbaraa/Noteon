@@ -8,13 +8,32 @@
 
 | Layer | Status |
 |-------|--------|
-| GitHub Actions (analyze + unit/widget + host integration + APK build) | Ready once pushed |
-| Firebase Test Lab job | **Blocked until secrets + GCP IAM are configured** |
+| GitHub Actions (analyze + unit/widget + host integration + APK build) | **Operational** (run 35338173375) |
+| Firebase Test Lab job | **Blocked**: GitHub secret `GCP_SA_KEY` missing; gcloud must use the Google account that owns `noteon-app` |
 | Real-device UX judgment (feel of scroll/IME) | Not automatable — still a human step |
 
 Firebase project already linked via `android/app/google-services.json`:
 - **project_id:** `noteon-app`
 - **applicationId:** `com.noteon.app`
+
+### Fastest unblock (Windows)
+
+1. In a browser, sign in as the Google account that owns Firebase project **noteon-app**  
+   (Firebase CLI on this machine is logged in as `arhajjajwork@gmail.com` — use that account in the gcloud browser prompt, not a different personal Gmail).
+2. Run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_ftl_credentials.ps1
+```
+
+3. Then:
+
+```powershell
+gh workflow run ci.yml -f run_firebase_test_lab=true -f ftl_physical=true
+gh run watch
+```
+
+The script enables APIs, creates `noteon-ftl@noteon-app.iam.gserviceaccount.com`, binds least-privilege roles, and sets GitHub secret `GCP_SA_KEY`.
 
 ## Required GitHub Secrets / Variables
 
@@ -52,7 +71,7 @@ gcloud iam service-accounts create noteon-ftl \
 
 SA=noteon-ftl@$(gcloud config get-value project).iam.gserviceaccount.com
 
-# Roles (minimal practical set for FTL + result storage)
+# Roles (minimal practical set for FTL + result objects)
 gcloud projects add-iam-policy-binding noteon-app \
   --member="serviceAccount:${SA}" \
   --role="roles/cloudtestservice.testAdmin"
@@ -61,7 +80,7 @@ gcloud projects add-iam-policy-binding noteon-app \
   --role="roles/firebase.qualityAdmin"
 gcloud projects add-iam-policy-binding noteon-app \
   --member="serviceAccount:${SA}" \
-  --role="roles/storage.admin"
+  --role="roles/storage.objectAdmin"
 gcloud projects add-iam-policy-binding noteon-app \
   --member="serviceAccount:${SA}" \
   --role="roles/viewer"
@@ -149,7 +168,7 @@ See `firebase/testlab/android-devices.txt`:
 
 - MediumPhone.arm API 33 — virtual, common modern phone
 - SmallPhone.arm API 33 — virtual, small screen
-- Pixel6.arm API 33 — virtual, larger phone
+- MediumTablet.arm API 33 — virtual, larger screen (Pixel6.arm is not in the FTL catalog)
 - oriole API 32 — physical Pixel 6 (when physical quota allows)
 
 If a model is unavailable in your region/quota, remove or replace that line; CI skips unknown models only when FTL returns a clear catalog error (see workflow logs).

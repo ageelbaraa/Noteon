@@ -7,8 +7,12 @@
 #
 # Catalog tip (requires gcloud auth against noteon-app):
 #   gcloud firebase test android models list --project=noteon-app
+#
+# Verified against public FTL catalog (Feb 2026):
+#   - MediumPhone.arm / SmallPhone.arm / MediumTablet.arm / oriole exist
+#   - Pixel6.arm does NOT exist (replaced by MediumTablet.arm for large-screen coverage)
 
 MODEL=MediumPhone.arm VERSION=33 ORIENTATION=portrait LOCALE=en KIND=virtual WHY=Common modern mid-size phone (virtual, API 33)
 MODEL=SmallPhone.arm VERSION=33 ORIENTATION=portrait LOCALE=en KIND=virtual WHY=Smaller screen coverage for layout/scroll edge cases
-MODEL=Pixel6.arm VERSION=33 ORIENTATION=portrait LOCALE=en KIND=virtual WHY=Larger flagship-class virtual device (Pixel 6 ARM)
+MODEL=MediumTablet.arm VERSION=33 ORIENTATION=portrait LOCALE=en KIND=virtual WHY=Larger screen coverage (tablet virtual; replaces unavailable Pixel6.arm)
 MODEL=oriole VERSION=32 ORIENTATION=portrait LOCALE=en KIND=physical WHY=Physical Pixel 6 when FTL physical quota allows
