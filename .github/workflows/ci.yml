@@ -1,10 +1,11 @@
 name: CI
 
-# Noteon cloud testing pipeline:
-#   analyze → host unit/widget tests → host integration tests → Android APKs
-#   → (optional) Firebase Test Lab → AI-readable summary artifact
+# Noteon free cloud testing pipeline:
+#   analyze → host unit/widget tests → host integration (flutter-tester)
+#   → Android APKs → Android emulator integration (FREE, default)
+#   → (optional) Firebase Test Lab — requires Blaze billing; left intact but off
 #
-# FTL requires GitHub secret GCP_SA_KEY (see docs/CI_CLOUD_TESTING.md).
+# Prefer the emulator job for day-to-day remote Android validation ($0, no card).
 
 on:
   push:
@@ -12,12 +13,16 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      run_android_emulator:
+        description: Run FREE Android emulator integration tests
+        type: boolean
+        default: true
       run_firebase_test_lab:
-        description: Run Firebase Test Lab (needs GCP_SA_KEY)
+        description: Run Firebase Test Lab (OPTIONAL — needs Blaze billing + GCP_SA_KEY)
         type: boolean
         default: false
       ftl_physical:
-        description: Include physical devices from the matrix
+        description: Include physical FTL devices (only if FTL enabled)
         type: boolean
         default: true
 
@@ -27,10 +32,12 @@ concurrency:
 
 env:
   FLUTTER_VERSION: "3.41.7"
-  # Matches android/app/google-services.json. Override via repo variable if needed
-  # by editing this workflow or setting a custom env in a fork.
   FIREBASE_PROJECT_ID: noteon-app
   RESULTS_BUCKET: noteon-app-ftl-results
+  # Single mid-range image: balances coverage vs GitHub Actions minutes.
+  EMULATOR_API_LEVEL: "30"
+  EMULATOR_TARGET: google_apis
+  EMULATOR_ARCH: x86_64
 
 jobs:
   analyze-and-test:
@@ -183,18 +190,116 @@ jobs:
           path: build/ci/apks/
           if-no-files-found: error
 
+  # ---------------------------------------------------------------------------
+  # FREE Android emulator (default remote device path — no billing / no card)
+  # ---------------------------------------------------------------------------
+  android-emulator:
+    name: Android emulator integration
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    if: >
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.run_android_emulator == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Pub get
+        run: flutter pub get
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ env.EMULATOR_API_LEVEL }}-${{ env.EMULATOR_TARGET }}-${{ env.EMULATOR_ARCH }}-v1
+
+      - name: Create AVD snapshot (cache miss only)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.EMULATOR_API_LEVEL }}
+          target: ${{ env.EMULATOR_TARGET }}
+          arch: ${{ env.EMULATOR_ARCH }}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "AVD snapshot ready for cache"
+
+      - name: Run Flutter integration tests on emulator
+        id: emu-tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ env.EMULATOR_API_LEVEL }}
+          target: ${{ env.EMULATOR_TARGET }}
+          arch: ${{ env.EMULATOR_ARCH }}
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            mkdir -p build/ci
+            set +e
+            : > build/ci/emulator_tests.ndjson
+            : > build/ci/emulator_tests.stderr
+            code=0
+            for f in integration_test/*_test.dart; do
+              echo "=== $f ===" | tee -a build/ci/emulator_tests.stderr
+              flutter test "$f" -d emulator-5554 --machine \
+                2>>build/ci/emulator_tests.stderr | tee -a build/ci/emulator_tests.ndjson
+              c=${PIPESTATUS[0]}
+              if [ "$c" -ne 0 ]; then code=$c; fi
+            done
+            adb exec-out screencap -p > build/ci/emulator_screenshot.png || true
+            adb logcat -d > build/ci/emulator_logcat.txt || true
+            echo "EMU_EXIT=$code" | tee build/ci/emulator_exit.txt
+            exit $code
+
+      - name: Upload emulator artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-emulator-results
+          path: |
+            build/ci/emulator_tests.ndjson
+            build/ci/emulator_tests.stderr
+            build/ci/emulator_screenshot.png
+            build/ci/emulator_logcat.txt
+            build/ci/emulator_exit.txt
+          if-no-files-found: warn
+
   firebase-test-lab:
-    name: Firebase Test Lab
+    name: Firebase Test Lab (optional / billing required)
     needs: [analyze-and-test, build-android]
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    # Manual dispatch, or main push when ENABLE_FIREBASE_TEST_LAB=true.
+    # Opt-in only. noteon-app currently has billing disabled — do not enable
+    # ENABLE_FIREBASE_TEST_LAB until Blaze is intentionally accepted later.
     if: >
-      (github.event_name == 'workflow_dispatch' &&
-       github.event.inputs.run_firebase_test_lab == 'true') ||
-      (github.event_name == 'push' &&
-       github.ref == 'refs/heads/main' &&
-       vars.ENABLE_FIREBASE_TEST_LAB == 'true')
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.run_firebase_test_lab == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -387,7 +492,7 @@ jobs:
 
   report:
     name: Publish CI report
-    needs: [analyze-and-test, build-android, firebase-test-lab]
+    needs: [analyze-and-test, build-android, android-emulator, firebase-test-lab]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -407,6 +512,13 @@ jobs:
           name: test-logs
           path: build/ci/from-tests
 
+      - name: Download emulator results (optional)
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: android-emulator-results
+          path: build/ci/from-emulator
+
       - name: Download FTL results (optional)
         continue-on-error: true
         uses: actions/download-artifact@v4
@@ -423,9 +535,16 @@ jobs:
             cp -f build/ci/from-tests/integration_tests.ndjson build/ci/integration_tests.ndjson 2>/dev/null || true
           cp -f build/ci/from-tests/build/ci/analyze.txt build/ci/analyze.txt 2>/dev/null || \
             cp -f build/ci/from-tests/analyze.txt build/ci/analyze.txt 2>/dev/null || true
+          cp -f build/ci/from-emulator/emulator_tests.ndjson build/ci/emulator_tests.ndjson 2>/dev/null || \
+            cp -f build/ci/from-emulator/build/ci/emulator_tests.ndjson build/ci/emulator_tests.ndjson 2>/dev/null || true
           cp -f build/ci/from-ftl/ftl_result.json build/ci/ftl_result.json 2>/dev/null || \
             cp -f build/ci/from-ftl/build/ci/ftl_result.json build/ci/ftl_result.json 2>/dev/null || true
-          ls -laR build/ci | head -n 80
+          # Default FTL skip note when job did not run (no billing / not requested).
+          if [ ! -f build/ci/ftl_result.json ]; then
+            printf '%s\n' '{"status":"SKIP","reason":"Firebase Test Lab not run (optional; requires Blaze billing). Free Android emulator job is the default remote path.","devices":[],"failures":[],"scenarios":[],"artifacts":[]}' \
+              > build/ci/ftl_result.json
+          fi
+          ls -laR build/ci | head -n 100
 
       - name: Generate final report
         run: |
@@ -433,6 +552,7 @@ jobs:
           dart run tool/ci/summarize_ci.dart \
             --host-json build/ci/host_tests.ndjson \
             --integration-json build/ci/integration_tests.ndjson \
+            --emulator-json build/ci/emulator_tests.ndjson \
             --analyze-log build/ci/analyze.txt \
             --ftl-json build/ci/ftl_result.json \
             --flutter-version "${{ needs.analyze-and-test.outputs.flutter_version }}" \

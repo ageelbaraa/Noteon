@@ -1,198 +1,100 @@
-# Cloud testing for Noteon (GitHub Actions + Firebase Test Lab)
-#
-# This document is the source of truth for humans and AI agents operating the
-# remote test pipeline. Application behavior / note schema are intentionally
-# unchanged by this infrastructure.
+# Cloud testing for Noteon (GitHub Actions + optional FTL)
 
 ## Status overview
 
-| Layer | Status |
-|-------|--------|
-| GitHub Actions (analyze + unit/widget + host integration + APK build) | **Operational** |
-| gcloud auth for `noteon-app` | **Operational** as `arhajjajwork@gmail.com` |
-| GitHub secret `GCP_SA_KEY` | **Configured** (`noteon-ftl@noteon-app.iam.gserviceaccount.com`) |
-| Firebase Test Lab device runs | **Blocked on billing** — project `noteon-app` has `billingEnabled: false` and this account lists **0** billing accounts |
+| Layer | Status | Cost |
+|-------|--------|------|
+| GitHub Actions host CI (analyze / unit / widget / flutter-tester) | **Operational** | **$0** (public repo) |
+| **Android emulator integration (default remote Android path)** | **Operational path** | **$0** — no card |
+| Firebase Test Lab | **Optional / unavailable** — project billing disabled | Would require Blaze — **not enabled** |
 
-Firebase project already linked via `android/app/google-services.json`:
-- **project_id:** `noteon-app`
-- **applicationId:** `com.noteon.app`
+Firebase project `noteon-app` remains linked for App Distribution only. **No billing was enabled.**
 
-### Unblock FTL (billing — required)
+## Free alternatives compared
 
-Firebase Test Lab needs the **Blaze** plan (billing linked). Without it, `gcloud firebase test android run` fails when creating the results bucket:
+| Option | Cost | Credit card | Flutter integration | Real Android device | Automated | AI-readable |
+|--------|------|-------------|---------------------|---------------------|-----------|-------------|
+| **GitHub Actions + Android emulator** (chosen) | **$0** (public repo unlimited Actions) | **No** | **Yes** | Emulator only | **Yes** | **Yes** |
+| GitHub Actions host `flutter-tester` only | $0 | No | Partial (no Android runtime) | No | Yes | Yes |
+| Firebase Test Lab | Blocked without Blaze | Yes (billing) | Yes | Virtual + physical | Yes | Yes |
+| BrowserStack / Sauce Labs free trials | Trial / limited | Usually yes | Yes | Yes | Yes | Varies |
+| Other “free trial” device clouds | Trial | Usually yes | Yes | Yes | Yes | Varies |
 
-> Permission denied while creating bucket … Is billing enabled for project: [noteon-app]?
+**Selected:** GitHub-hosted Android emulator via `reactivecircus/android-emulator-runner`.
 
-1. Open https://console.firebase.google.com/project/noteon-app/usage/details while signed in as **`arhajjajwork@gmail.com`**
-2. Upgrade to **Blaze** / link a Cloud Billing account (Spark cannot run Test Lab).
-3. Confirm:
+**Why:** Permanently free for this **public** repository, no card, runs the existing `integration_test/` suite on a real Android API image, uploads logs/screenshots, and feeds `ci_report.json` for AI agents. It does **not** replace physical-device UX judgment.
 
-```powershell
-gcloud billing projects describe noteon-app
-# billingEnabled should be true
+**Limits:** Uses GitHub Actions minutes (unlimited for public repos; private repos have a free monthly quota). Emulator ≠ OEM hardware / IME “feel”.
+
+## Architecture (current)
+
+```
+Flutter Noteon
+    → GitHub Actions
+         ├── flutter analyze
+         ├── flutter test (host)
+         ├── integration_test on flutter-tester (host)
+         ├── Android APK build
+         ├── Android emulator integration  ← FREE default remote Android path
+         └── Firebase Test Lab (optional, billing required — left intact, off)
+              → Artifacts: CI_REPORT.md / ci_report.json / screenshots / logcat
 ```
 
-4. Re-run:
+## Firebase Test Lab (optional — do not enable billing for this)
 
-```powershell
-gh workflow run ci.yml -f run_firebase_test_lab=true -f ftl_physical=true
-gh run watch
-```
+FTL remains configured under `.github/workflows/ci.yml` and `firebase/testlab/`, but:
 
-Credentials (`GCP_SA_KEY`) and the device matrix are already in place — only billing is missing.
+- Runs **only** on `workflow_dispatch` with `run_firebase_test_lab=true`.
+- Requires Blaze billing on `noteon-app` (currently disabled).
+- **Do not upgrade billing** unless you later choose to accept charges.
 
-## Required GitHub Secrets / Variables
+Credentials already prepared (`GCP_SA_KEY`) can stay; they are unused while FTL is off.
 
-Configure under: **GitHub → Noteon → Settings → Secrets and variables → Actions**
-
-### Secrets
-
-| Name | Required for | Description |
-|------|--------------|-------------|
-| `GCP_SA_KEY` | Firebase Test Lab | Full JSON of a Google Cloud **service account** key with Test Lab access on `noteon-app`. Never commit this file. |
-
-### Optional Variables
-
-| Name | Default | Description |
-|------|---------|-------------|
-| `ENABLE_FIREBASE_TEST_LAB` | unset | Set to `true` to allow the FTL job on `push` to `main` (in addition to manual `workflow_dispatch`). |
-| `FIREBASE_PROJECT_ID` | `noteon-app` | Override only if the Firebase project id changes. |
-
-### Create the service account (one-time)
-
-```bash
-# Authenticate locally first
-gcloud auth login
-gcloud config set project noteon-app
-
-# Enable APIs
-gcloud services enable testing.googleapis.com toolresults.googleapis.com \
-  cloudresourcemanager.googleapis.com storage-component.googleapis.com \
-  --project=noteon-app
-
-# Service account
-gcloud iam service-accounts create noteon-ftl \
-  --display-name="Noteon Firebase Test Lab CI" \
-  --project=noteon-app
-
-SA=noteon-ftl@$(gcloud config get-value project).iam.gserviceaccount.com
-
-# Roles (minimal practical set for FTL + result objects)
-gcloud projects add-iam-policy-binding noteon-app \
-  --member="serviceAccount:${SA}" \
-  --role="roles/cloudtestservice.testAdmin"
-gcloud projects add-iam-policy-binding noteon-app \
-  --member="serviceAccount:${SA}" \
-  --role="roles/firebase.qualityAdmin"
-gcloud projects add-iam-policy-binding noteon-app \
-  --member="serviceAccount:${SA}" \
-  --role="roles/storage.objectAdmin"
-gcloud projects add-iam-policy-binding noteon-app \
-  --member="serviceAccount:${SA}" \
-  --role="roles/viewer"
-
-# Key → paste entire JSON into GitHub secret GCP_SA_KEY
-gcloud iam service-accounts keys create ./noteon-ftl-key.json \
-  --iam-account="${SA}" \
-  --project=noteon-app
-```
-
-Then delete the local key file after uploading to GitHub Secrets.
-
-## Workflows
-
-| File | Purpose |
-|------|---------|
-| `.github/workflows/ci.yml` | Analyze, host tests, integration (host), Android APKs, optional FTL, AI-readable summary |
-| `firebase/testlab/android-devices.txt` | Editable device matrix |
-| `tool/ci/summarize_ci.dart` | Builds human + machine-readable reports from test/FTL outputs |
-
-## How to run
+## How to run (free path)
 
 ### Automatic
 
-- Every push / PR: analyze + `flutter test` + host `integration_test` + debug APK build.
-- FTL runs on `workflow_dispatch`, or on `push` to `main` when `ENABLE_FIREBASE_TEST_LAB=true` **and** `GCP_SA_KEY` is set.
+Every push / PR runs analyze, host tests, APK build, and the **Android emulator** job.
 
-### Manual trigger
+### Manual
 
 ```bash
-gh workflow run ci.yml
-# Optional inputs are documented in the workflow file.
+gh workflow run ci.yml -f run_android_emulator=true -f run_firebase_test_lab=false
 gh run watch
 ```
 
-### Local (laptop)
+### Local (no cloud cost)
 
 ```bash
 flutter analyze
-flutter test --machine > build/ci/host_tests.json
-dart run tool/ci/summarize_ci.dart --host-json build/ci/host_tests.json --out build/ci
-
-# Host integration (no phone required; uses flutter-tester)
+flutter test
 flutter test integration_test/app_smoke_test.dart -d flutter-tester
 flutter test integration_test/note_editor_browse_test.dart -d flutter-tester
-
-# On a connected Android device / emulator
+# With a local emulator/device:
 flutter test integration_test -d <deviceId>
 ```
 
-### Firebase Test Lab only (after APKs exist)
+## Artifacts
 
-```bash
-# Built by CI, or locally:
-flutter build apk --debug
-pushd android && ./gradlew app:assembleDebug app:assembleAndroidTest && popd
+| Artifact | Contents |
+|----------|----------|
+| `ci-summary` | `CI_REPORT.md`, `ci_report.json` |
+| `test-logs` | Host analyze + machine JSON |
+| `android-emulator-results` | Emulator NDJSON, stderr, screenshot, logcat |
+| `android-apks` | Debug + androidTest APKs |
+| `ftl-results` | Only if FTL was explicitly requested and ran |
 
-gcloud firebase test android run \
-  --project=noteon-app \
-  --type instrumentation \
-  --app build/app/outputs/flutter-apk/app-debug.apk \
-  --test build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
-  --timeout 15m \
-  --results-bucket=gs://noteon-app-ftl-results \
-  --results-dir=manual-$(date +%Y%m%d-%H%M%S) \
-  --device model=MediumPhone.arm,version=33,locale=en,orientation=portrait
-```
+## Emulator vs physical UX
 
-Create the results bucket once if missing:
+| Automated emulator validation | Physical-device UX validation |
+|-------------------------------|------------------------------|
+| Pass/fail of scroll/caret/embed scenarios | Subjective scroll/IME “feel” |
+| CI regression gate | Density comfort on real panels |
+| Logs + screenshot | Multi-OEM quirks |
 
-```bash
-gsutil mb -p noteon-app -l us-central1 gs://noteon-app-ftl-results || true
-```
+## Cost safety
 
-## Viewing results
-
-1. **GitHub Actions** → run → job logs.
-2. **Artifacts** on the run: `ci-summary`, `test-logs`, `android-apks`, `ftl-results` (when FTL ran).
-3. Open `ci-summary/CI_REPORT.md` and `ci-summary/ci_report.json`.
-4. Firebase console: https://console.firebase.google.com/project/noteon-app/testlab/histories
-
-## Device matrix (initial)
-
-See `firebase/testlab/android-devices.txt`:
-
-- MediumPhone.arm API 33 — virtual, common modern phone
-- SmallPhone.arm API 33 — virtual, small screen
-- MediumTablet.arm API 33 — virtual, larger screen (Pixel6.arm is not in the FTL catalog)
-- oriole API 32 — physical Pixel 6 (when physical quota allows)
-
-If a model is unavailable in your region/quota, remove or replace that line; CI skips unknown models only when FTL returns a clear catalog error (see workflow logs).
-
-## What stays human
-
-- Subjective scroll/IME “feel”
-- Visual density comfort at 16px
-- Long real notes with many drawings under production data
-- Flaky device-only timing issues that need judgment
-
-## AI agent failure triage
-
-`ci_report.json` includes per-failure fields:
-
-- `testName`, `device`, `error`, `stack`, `logExcerpt`
-- `classification`: `application_bug` | `test_bug` | `environment` | `flaky` | `infrastructure` | `unknown`
-- `confidence`: `low` | `medium` | `high`
-- `artifactHints`: paths to logs/screenshots/videos when present
-
-Agents should read `CI_REPORT.md` first, then `ci_report.json`, then download matching artifacts.
+- No Firebase Blaze upgrade.
+- No GCP billing link.
+- No paid third-party device cloud activated.
+- Default CI uses only GitHub Actions (free for this public repo).

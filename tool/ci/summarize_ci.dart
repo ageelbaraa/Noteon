@@ -6,6 +6,7 @@
 //   dart run tool/ci/summarize_ci.dart \
 //     --host-json build/ci/host_tests.ndjson \
 //     --integration-json build/ci/integration_tests.ndjson \
+//     --emulator-json build/ci/emulator_tests.ndjson \
 //     --analyze-log build/ci/analyze.txt \
 //     --ftl-json build/ci/ftl_result.json \
 //     --flutter-version "3.41.7" \
@@ -23,6 +24,8 @@ void main(List<String> args) {
   final host = _parseFlutterMachine(opts.hostJson, suiteHint: 'host');
   final integration =
       _parseFlutterMachine(opts.integrationJson, suiteHint: 'integration');
+  final emulator =
+      _parseFlutterMachine(opts.emulatorJson, suiteHint: 'emulator');
   final ftl = _readFtl(opts.ftlJson);
 
   final report = <String, Object?>{
@@ -32,15 +35,21 @@ void main(List<String> args) {
     'analyze': analyze,
     'hostTests': host.toJson(),
     'integrationTests': integration.toJson(),
+    'androidEmulator': emulator.toJson(),
     'firebaseTestLab': ftl,
     'failures': [
       ...host.failures.map((f) => f.toJson()),
       ...integration.failures.map((f) => f.toJson()),
+      ...emulator.failures.map((f) {
+        final j = f.toJson();
+        j['device'] = 'android-emulator-ci';
+        return j;
+      }),
       ...((ftl['failures'] as List?)?.cast<Map<String, Object?>>() ?? const []),
     ],
   };
 
-  final md = _renderMarkdown(report, host, integration);
+  final md = _renderMarkdown(report, host, integration, emulator);
   File('${opts.outDir}/ci_report.json')
       .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(report));
   File('${opts.outDir}/CI_REPORT.md').writeAsStringSync(md);
@@ -50,8 +59,13 @@ void main(List<String> args) {
   final analyzeFailed = analyze['status'] == 'FAIL';
   final hostFailed = host.failed > 0;
   final integrationFailed = integration.failed > 0;
+  final emulatorFailed = emulator.failed > 0;
   final ftlFailed = ftl['status'] == 'FAIL';
-  if (analyzeFailed || hostFailed || integrationFailed || ftlFailed) {
+  if (analyzeFailed ||
+      hostFailed ||
+      integrationFailed ||
+      emulatorFailed ||
+      ftlFailed) {
     exitCode = 1;
   }
 }
@@ -61,6 +75,7 @@ class _Args {
     required this.outDir,
     this.hostJson,
     this.integrationJson,
+    this.emulatorJson,
     this.analyzeLog,
     this.ftlJson,
     this.flutterVersion,
@@ -70,6 +85,7 @@ class _Args {
   final String outDir;
   final String? hostJson;
   final String? integrationJson;
+  final String? emulatorJson;
   final String? analyzeLog;
   final String? ftlJson;
   final String? flutterVersion;
@@ -79,6 +95,7 @@ class _Args {
     String? out = 'build/ci';
     String? host;
     String? integration;
+    String? emulator;
     String? analyze;
     String? ftl;
     String? flutterVersion;
@@ -93,6 +110,8 @@ class _Args {
           host = next();
         case '--integration-json':
           integration = next();
+        case '--emulator-json':
+          emulator = next();
         case '--analyze-log':
           analyze = next();
         case '--ftl-json':
@@ -107,6 +126,7 @@ class _Args {
       outDir: out!,
       hostJson: host,
       integrationJson: integration,
+      emulatorJson: emulator,
       analyzeLog: analyze,
       ftlJson: ftl,
       flutterVersion: flutterVersion,
@@ -458,14 +478,19 @@ String _renderMarkdown(
   Map<String, Object?> report,
   _SuiteResult host,
   _SuiteResult integration,
+  _SuiteResult emulator,
 ) {
   final analyze = report['analyze'] as Map<String, Object?>;
   final ftl = report['firebaseTestLab'] as Map<String, Object?>;
   final failures = (report['failures'] as List).cast<Map<String, Object?>>();
-  final deviceLines = (ftl['devices'] as List?)?.map((e) => '- $e').toList() ??
-      const <String>[];
-  final devices =
-      deviceLines.isEmpty ? '- (none / FTL not run)' : deviceLines.join('\n');
+  final deviceLines = <String>[
+    if (emulator.total > 0)
+      '- GitHub Actions Android emulator (API ${Platform.environment['EMULATOR_API_LEVEL'] ?? '30'} google_apis) — FREE',
+    ...((ftl['devices'] as List?)?.map((e) => '- $e') ?? const <String>[]),
+  ];
+  final devices = deviceLines.isEmpty
+      ? '- (none / emulator or FTL not run)'
+      : deviceLines.join('\n');
 
   final buf = StringBuffer()
     ..writeln('# Noteon CI Report')
@@ -488,7 +513,10 @@ String _renderMarkdown(
       '| Host widget tests | **${host.toJson()['widget'] is Map ? (host.toJson()['widget'] as Map)['status'] : 'n/a'}** | ${host.widgetPassed}/${host.widgetPassed + host.widgetFailed} passed |',
     )
     ..writeln(
-      '| Integration tests | **${integration.toJson()['status']}** | ${integration.passed}/${integration.total} passed |',
+      '| Integration tests (host) | **${integration.toJson()['status']}** | ${integration.passed}/${integration.total} passed |',
+    )
+    ..writeln(
+      '| Android emulator (FREE) | **${emulator.toJson()['status']}** | ${emulator.passed}/${emulator.total} passed |',
     )
     ..writeln(
       '| Firebase Test Lab | **${ftl['status']}** | ${_oneLine(ftl['reason'] ?? ftl['summary'] ?? '')} |',
@@ -504,6 +532,7 @@ String _renderMarkdown(
   final scenarios = [
     ...host.scenarios,
     ...integration.scenarios,
+    ...emulator.scenarios,
     ...((ftl['scenarios'] as List?)?.map((e) => '$e') ?? const []),
   ];
   if (scenarios.isEmpty) {
@@ -555,7 +584,7 @@ String _renderMarkdown(
     ..writeln('- `ci_report.json` — machine-readable summary for AI agents')
     ..writeln('- `CI_REPORT.md` — this file')
     ..writeln('- GitHub Actions artifacts: `test-logs`, `android-apks`, '
-        '`ftl-results` (when FTL ran)')
+        '`android-emulator-results`, `ftl-results` (when FTL ran)')
     ..writeln()
     ..writeln('## Notes for AI agents')
     ..writeln()
@@ -563,10 +592,10 @@ String _renderMarkdown(
       '1. Prefer fixing `application_bug` over weakening assertions.',
     )
     ..writeln(
-      '2. Treat `infrastructure` / missing FTL credentials as setup, not product regressions.',
+      '2. Treat `infrastructure` / missing FTL billing as setup, not product regressions.',
     )
     ..writeln(
-      '3. `flaky` / `environment` may need device re-run before code changes.',
+      '3. Emulator validation ≠ physical-device UX judgment.',
     )
     ..writeln(
       '4. Do not change note schema/Delta format unless a failure proves it necessary.',
