@@ -200,9 +200,10 @@ class NoteEditorBrowseCaretSync {
         TextSelection.collapsed(offset: offset),
         ChangeSource.local,
       );
-      // Drop inherited/toggled text color so typing after browse does not
-      // suddenly continue in a prior red (or other) span color.
-      controller.formatSelection(const ColorAttribute(null));
+      // Do NOT formatSelection(ColorAttribute(null)) here — that re-inserts a
+      // color key into toggledStyle after updateSelection cleared it, which
+      // made subsequent typing inherit a broken/colored style. Selection
+      // update already resets toggledStyle when keepStyleOnNewLine is false.
     } finally {
       controller.ignoreFocusOnTextChange = false;
       controller.skipRequestKeyboard = false;

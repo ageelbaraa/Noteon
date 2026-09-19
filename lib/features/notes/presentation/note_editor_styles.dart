@@ -4,17 +4,17 @@ import 'package:flutter_quill/flutter_quill.dart';
 /// Comfortable Quill styles: readable body size with tighter chrome spacing.
 ///
 /// Body stays near the Material default (16) — density comes from spacing,
-/// not smaller type.
+/// not smaller type. Text color is forced to [ColorScheme.onSurface] so the
+/// editor never inherits an accidental theme/error color as the default ink.
 DefaultStyles noteEditorCompactStyles(BuildContext context) {
   final theme = Theme.of(context);
-  final base = DefaultTextStyle.of(context).style;
-  final color = base.color ?? theme.colorScheme.onSurface;
+  final ink = theme.colorScheme.onSurface;
 
   const hSpace = HorizontalSpacing(0, 0);
-  final paragraphStyle = base.copyWith(
+  final paragraphStyle = TextStyle(
     fontSize: 16,
     height: 1.3,
-    color: color,
+    color: ink,
     decoration: TextDecoration.none,
   );
 
@@ -24,10 +24,10 @@ DefaultStyles noteEditorCompactStyles(BuildContext context) {
     VerticalSpacing spacing,
   ) {
     return DefaultTextBlockStyle(
-      base.copyWith(
+      TextStyle(
         fontSize: size,
         height: height,
-        color: color,
+        color: ink,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
         decoration: TextDecoration.none,
@@ -41,6 +41,8 @@ DefaultStyles noteEditorCompactStyles(BuildContext context) {
 
   return DefaultStyles.getInstance(context).merge(
     DefaultStyles(
+      // Used by Quill when resolving inline color decorations.
+      color: ink,
       paragraph: DefaultTextBlockStyle(
         paragraphStyle,
         hSpace,

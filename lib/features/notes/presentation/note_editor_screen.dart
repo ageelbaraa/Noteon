@@ -2112,7 +2112,15 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                         child: NotificationListener<ScrollNotification>(
                           onNotification:
                               _browseCaretSync.onScrollNotification,
-                          child: QuillEditor.basic(
+                          child: DefaultTextStyle(
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge!
+                                .copyWith(
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  decoration: TextDecoration.none,
+                                ),
+                            child: QuillEditor.basic(
                             controller: _quillController,
                             focusNode: _editorFocusNode,
                             scrollController: _editorScrollController,
@@ -2129,6 +2137,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                               scrollPhysics: const BouncingScrollPhysics(
                                 parent: AlwaysScrollableScrollPhysics(),
                               ),
+                              // Keep caret ink aligned with body text, not error/primary.
+                              paintCursorAboveText: true,
                               customStyles: noteEditorCompactStyles(context),
                               embedBuilders: [
                                 NoteonImageEmbedBuilder(
@@ -2184,6 +2194,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                               },
                             ),
                           ),
+                          ),
                         ),
                       ),
                     ),
@@ -2214,10 +2225,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                         showFontSize: true,
                         showStrikeThrough: true,
                         showInlineCode: false,
-                        // Text color caused "suddenly red" reports via Quill
-                        // inheritance after browse/paste. Keep picker off;
-                        // clear-format remains so pasted colors can be removed.
-                        showColorButton: false,
+                        // Color picker restored. Clear-format stays so accidental
+                        // Material palette taps (often red) are easy to undo.
+                        showColorButton: true,
                         showBackgroundColorButton: false,
                         showClearFormat: true,
                         showHeaderStyle: true,

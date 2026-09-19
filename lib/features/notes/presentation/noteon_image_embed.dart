@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -66,6 +67,7 @@ class NoteonImageEmbedBuilder extends EmbedBuilder {
         embedContext.node.documentOffset;
 
     return _NoteonEmbeddedImage(
+      key: ValueKey('img:$relativePath@$offset'),
       relativePath: relativePath,
       displayWidth: payload.displayWidth,
       noteId: noteId,
@@ -93,8 +95,9 @@ class NoteonImageEmbedBuilder extends EmbedBuilder {
   }
 }
 
-class _NoteonEmbeddedImage extends ConsumerWidget {
+class _NoteonEmbeddedImage extends ConsumerStatefulWidget {
   const _NoteonEmbeddedImage({
+    super.key,
     required this.relativePath,
     required this.documentOffset,
     required this.readOnly,
@@ -111,26 +114,61 @@ class _NoteonEmbeddedImage extends ConsumerWidget {
   final NoteBlockInteraction? interaction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NoteonEmbeddedImage> createState() =>
+      _NoteonEmbeddedImageState();
+}
+
+class _NoteonEmbeddedImageState extends ConsumerState<_NoteonEmbeddedImage> {
+  Future<File?>? _fileFuture;
+  String? _futurePath;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureFileFuture();
+  }
+
+  @override
+  void didUpdateWidget(covariant _NoteonEmbeddedImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.relativePath != widget.relativePath ||
+        oldWidget.noteId != widget.noteId) {
+      _fileFuture = null;
+      _futurePath = null;
+      _ensureFileFuture();
+    }
+  }
+
+  void _ensureFileFuture() {
+    if (_futurePath == widget.relativePath && _fileFuture != null) {
+      return;
+    }
+    _futurePath = widget.relativePath;
+    _fileFuture = ref.read(mediaStorageProvider).fileFor(widget.relativePath);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final session = ref.watch(unlockedNoteSessionProvider);
     Uint8List? sessionBytes;
     if (session != null &&
-        noteId != null &&
-        session.noteId == noteId &&
-        session.mediaBytes.containsKey(relativePath)) {
-      sessionBytes = session.mediaBytes[relativePath];
+        widget.noteId != null &&
+        session.noteId == widget.noteId &&
+        session.mediaBytes.containsKey(widget.relativePath)) {
+      sessionBytes = session.mediaBytes[widget.relativePath];
     }
 
     final Widget image;
     if (sessionBytes != null) {
       image = _buildImage(context, l10n, MemoryImage(sessionBytes));
     } else {
-      final media = ref.watch(mediaStorageProvider);
       image = Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: FutureBuilder(
-          future: media.fileFor(relativePath),
+        child: FutureBuilder<File?>(
+          // Stable future — recreating it on every Quill rebuild caused
+          // loading-spinner flicker while typing near images.
+          future: _fileFuture,
           builder: (context, snapshot) {
             final file = snapshot.data;
             if (snapshot.connectionState != ConnectionState.done) {
@@ -148,8 +186,8 @@ class _NoteonEmbeddedImage extends ConsumerWidget {
       );
     }
 
-    final interaction = this.interaction;
-    if (readOnly || interaction == null) {
+    final interaction = widget.interaction;
+    if (widget.readOnly || interaction == null) {
       return image;
     }
 
@@ -158,9 +196,9 @@ class _NoteonEmbeddedImage extends ConsumerWidget {
       builder: (context, selection, _) {
         final selected = selection != null &&
             selection.block.kind == NoteBlockKind.image &&
-            selection.block.start == documentOffset;
+            selection.block.start == widget.documentOffset;
         final blockIndex = interaction.indexForOffset(
-              documentOffset,
+              widget.documentOffset,
               NoteBlockKind.image,
             ) ??
             0;
@@ -180,10 +218,10 @@ class _NoteonEmbeddedImage extends ConsumerWidget {
               interaction.onSelect(
                 NoteBlock(
                   kind: NoteBlockKind.image,
-                  start: documentOffset,
+                  start: widget.documentOffset,
                   length: 1,
-                  imagePath: relativePath,
-                  displayWidth: displayWidth,
+                  imagePath: widget.relativePath,
+                  displayWidth: widget.displayWidth,
                 ),
               );
             },
@@ -201,7 +239,7 @@ class _NoteonEmbeddedImage extends ConsumerWidget {
   ) {
     final cacheWidth =
         (MediaQuery.sizeOf(context).width * 2).round().clamp(640, 2048);
-    final maxW = displayWidth;
+    final maxW = widget.displayWidth;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -217,6 +255,7 @@ class _NoteonEmbeddedImage extends ConsumerWidget {
             child: Image(
               image: ResizeImage(provider, width: cacheWidth),
               fit: BoxFit.contain,
+              gaplessPlayback: true,
               width: maxW,
               errorBuilder: (_, _, _) =>
                   _MissingImagePlaceholder(message: l10n.imageMissing),
