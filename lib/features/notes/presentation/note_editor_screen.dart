@@ -87,6 +87,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   late final NoteBlockInteraction _blockInteraction;
   late final NoteEditorBrowseCaretSync _browseCaretSync;
 
+  /// Stable across keystrokes so Quill does not rebuild embed subtrees.
+  List<EmbedBuilder>? _cachedEmbedBuilders;
+  int? _cachedEmbedBuildersNoteId;
+  bool? _cachedEmbedBuildersCanEdit;
+
   Note? _note;
   bool _loading = true;
   bool _isLocked = false;
@@ -1765,6 +1770,34 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   bool get _canEditBody => !_isLocked || _sessionUnlocked;
 
+  List<EmbedBuilder> _embedBuildersForEditor() {
+    final noteId = _note?.id;
+    final canEdit = _canEditBody;
+    if (_cachedEmbedBuilders != null &&
+        _cachedEmbedBuildersNoteId == noteId &&
+        _cachedEmbedBuildersCanEdit == canEdit) {
+      return _cachedEmbedBuilders!;
+    }
+    final interaction = canEdit ? _blockInteraction : null;
+    _cachedEmbedBuildersNoteId = noteId;
+    _cachedEmbedBuildersCanEdit = canEdit;
+    _cachedEmbedBuilders = [
+      NoteonImageEmbedBuilder(noteId: noteId, interaction: interaction),
+      NoteonTableEmbedBuilder(
+        editorFocusNode: _editorFocusNode,
+        interaction: interaction,
+      ),
+      NoteonAudioEmbedBuilder(noteId: noteId, interaction: interaction),
+      NoteonInkEmbedBuilder(noteId: noteId, interaction: interaction),
+      NoteonPdfEmbedBuilder(
+        noteId: noteId,
+        interaction: interaction,
+        onOpen: canEdit ? _openPdfAnnotator : null,
+      ),
+    ];
+    return _cachedEmbedBuilders!;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -2120,80 +2153,48 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                                   color: Theme.of(context).colorScheme.onSurface,
                                   decoration: TextDecoration.none,
                                 ),
-                            child: QuillEditor.basic(
-                            controller: _quillController,
-                            focusNode: _editorFocusNode,
-                            scrollController: _editorScrollController,
-                            config: QuillEditorConfig(
-                              placeholder: l10n.noteBodyHint,
-                              padding: EdgeInsets.only(
-                                bottom: 48 +
-                                    MediaQuery.viewInsetsOf(context).bottom,
+                            // Keyboard inset is applied in a leaf pad so
+                            // MediaQuery viewInset ticks do not recreate
+                            // QuillEditorConfig / embedBuilders every frame.
+                            child: _EditorKeyboardInset(
+                              child: QuillEditor.basic(
+                                controller: _quillController,
+                                focusNode: _editorFocusNode,
+                                scrollController: _editorScrollController,
+                                config: QuillEditorConfig(
+                                  placeholder: l10n.noteBodyHint,
+                                  padding: const EdgeInsets.only(bottom: 48),
+                                  scrollBottomInset: 72,
+                                  autoFocus: false,
+                                  expands: false,
+                                  scrollable: true,
+                                  scrollPhysics: const BouncingScrollPhysics(
+                                    parent: AlwaysScrollableScrollPhysics(),
+                                  ),
+                                  paintCursorAboveText: true,
+                                  customStyles:
+                                      noteEditorCompactStyles(context),
+                                  embedBuilders: _embedBuildersForEditor(),
+                                  onSingleLongTapStart: (details, getPosition) {
+                                    if (!_canEditBody) {
+                                      return false;
+                                    }
+                                    final pos =
+                                        getPosition(details.globalPosition);
+                                    final block = NoteBlockModel.blockAtOffset(
+                                      _quillController.document,
+                                      pos.offset,
+                                    );
+                                    if (block == null ||
+                                        block.kind != NoteBlockKind.text) {
+                                      return false;
+                                    }
+                                    _selectBlock(block);
+                                    return true;
+                                  },
+                                ),
                               ),
-                              scrollBottomInset: 72,
-                              autoFocus: false,
-                              expands: false,
-                              scrollable: true,
-                              scrollPhysics: const BouncingScrollPhysics(
-                                parent: AlwaysScrollableScrollPhysics(),
-                              ),
-                              // Keep caret ink aligned with body text, not error/primary.
-                              paintCursorAboveText: true,
-                              customStyles: noteEditorCompactStyles(context),
-                              embedBuilders: [
-                                NoteonImageEmbedBuilder(
-                                  noteId: _note?.id,
-                                  interaction: _canEditBody
-                                      ? _blockInteraction
-                                      : null,
-                                ),
-                                NoteonTableEmbedBuilder(
-                                  editorFocusNode: _editorFocusNode,
-                                  interaction: _canEditBody
-                                      ? _blockInteraction
-                                      : null,
-                                ),
-                                NoteonAudioEmbedBuilder(
-                                  noteId: _note?.id,
-                                  interaction: _canEditBody
-                                      ? _blockInteraction
-                                      : null,
-                                ),
-                                NoteonInkEmbedBuilder(
-                                  noteId: _note?.id,
-                                  interaction: _canEditBody
-                                      ? _blockInteraction
-                                      : null,
-                                ),
-                                NoteonPdfEmbedBuilder(
-                                  noteId: _note?.id,
-                                  interaction: _canEditBody
-                                      ? _blockInteraction
-                                      : null,
-                                  onOpen: _canEditBody
-                                      ? _openPdfAnnotator
-                                      : null,
-                                ),
-                              ],
-                              onSingleLongTapStart: (details, getPosition) {
-                                if (!_canEditBody) {
-                                  return false;
-                                }
-                                final pos =
-                                    getPosition(details.globalPosition);
-                                final block = NoteBlockModel.blockAtOffset(
-                                  _quillController.document,
-                                  pos.offset,
-                                );
-                                if (block == null ||
-                                    block.kind != NoteBlockKind.text) {
-                                  return false;
-                                }
-                                _selectBlock(block);
-                                return true;
-                              },
                             ),
-                          ),
                           ),
                         ),
                       ),
@@ -2280,6 +2281,23 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Applies keyboard bottom inset without rebuilding [child] when only insets
+/// change (parent keeps a stable [child] Element across those frames).
+class _EditorKeyboardInset extends StatelessWidget {
+  const _EditorKeyboardInset({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: child,
     );
   }
 }

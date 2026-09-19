@@ -122,13 +122,15 @@ class NoteonTableEmbedBuilder extends EmbedBuilder {
           columns: NoteonTableData.defaultColumns,
         );
 
-    return _NoteonTableView(
-      key: ValueKey(data.id),
-      data: data,
-      readOnly: embedContext.readOnly,
-      controller: embedContext.controller,
-      editorFocusNode: editorFocusNode,
-      interaction: interaction,
+    return RepaintBoundary(
+      child: _NoteonTableView(
+        key: ValueKey(data.id),
+        data: data,
+        readOnly: embedContext.readOnly,
+        controller: embedContext.controller,
+        editorFocusNode: editorFocusNode,
+        interaction: interaction,
+      ),
     );
   }
 }

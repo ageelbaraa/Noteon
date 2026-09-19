@@ -82,7 +82,12 @@ class _NoteEditorZoomViewportState extends State<NoteEditorZoomViewport> {
           builder: (context, _) {
             return Transform(
               transform: _transform.value,
-              filterQuality: FilterQuality.medium,
+              // Medium filtering while editing at 1× re-rasters embeds on every
+              // text frame and reads as flicker. Use none at identity; medium only
+              // when actually zoomed.
+              filterQuality: _transform.value.getMaxScaleOnAxis() > 1.02
+                  ? FilterQuality.medium
+                  : FilterQuality.none,
               child: SizedBox.expand(child: widget.child),
             );
           },

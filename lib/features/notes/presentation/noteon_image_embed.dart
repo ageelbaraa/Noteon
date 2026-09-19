@@ -59,39 +59,18 @@ class NoteonImageEmbedBuilder extends EmbedBuilder {
   Widget build(BuildContext context, EmbedContext embedContext) {
     final payload = NoteonImagePayload.decode(embedContext.node.value.data);
     final relativePath = payload.path;
-    final offset = _imageOffset(
-          embedContext.controller.document,
-          relativePath,
-          embedContext.node.documentOffset,
-        ) ??
-        embedContext.node.documentOffset;
-
+    // Key by path only — including documentOffset recreated the State on every
+    // keystroke above the image (offsets shift), which re-triggered file load
+    // and caused visible flicker while typing.
     return _NoteonEmbeddedImage(
-      key: ValueKey('img:$relativePath@$offset'),
+      key: ValueKey('img:$relativePath'),
       relativePath: relativePath,
       displayWidth: payload.displayWidth,
       noteId: noteId,
-      documentOffset: offset,
+      documentOffset: embedContext.node.documentOffset,
       readOnly: embedContext.readOnly,
       interaction: interaction,
     );
-  }
-
-  static int? _imageOffset(Document document, String path, int hint) {
-    final blocks = NoteBlockModel.listBlocks(document);
-    for (final b in blocks) {
-      if (b.kind == NoteBlockKind.image &&
-          b.imagePath == path &&
-          (b.start - hint).abs() <= 2) {
-        return b.start;
-      }
-    }
-    for (final b in blocks) {
-      if (b.kind == NoteBlockKind.image && b.imagePath == path) {
-        return b.start;
-      }
-    }
-    return null;
   }
 }
 
@@ -121,6 +100,13 @@ class _NoteonEmbeddedImage extends ConsumerStatefulWidget {
 class _NoteonEmbeddedImageState extends ConsumerState<_NoteonEmbeddedImage> {
   Future<File?>? _fileFuture;
   String? _futurePath;
+  late int _documentOffset;
+
+  @override
+  void initState() {
+    super.initState();
+    _documentOffset = widget.documentOffset;
+  }
 
   @override
   void didChangeDependencies() {
@@ -131,6 +117,7 @@ class _NoteonEmbeddedImageState extends ConsumerState<_NoteonEmbeddedImage> {
   @override
   void didUpdateWidget(covariant _NoteonEmbeddedImage oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _documentOffset = widget.documentOffset;
     if (oldWidget.relativePath != widget.relativePath ||
         oldWidget.noteId != widget.noteId) {
       _fileFuture = null;
@@ -196,9 +183,9 @@ class _NoteonEmbeddedImageState extends ConsumerState<_NoteonEmbeddedImage> {
       builder: (context, selection, _) {
         final selected = selection != null &&
             selection.block.kind == NoteBlockKind.image &&
-            selection.block.start == widget.documentOffset;
+            selection.block.start == _documentOffset;
         final blockIndex = interaction.indexForOffset(
-              widget.documentOffset,
+              _documentOffset,
               NoteBlockKind.image,
             ) ??
             0;
@@ -218,7 +205,7 @@ class _NoteonEmbeddedImageState extends ConsumerState<_NoteonEmbeddedImage> {
               interaction.onSelect(
                 NoteBlock(
                   kind: NoteBlockKind.image,
-                  start: widget.documentOffset,
+                  start: _documentOffset,
                   length: 1,
                   imagePath: widget.relativePath,
                   displayWidth: widget.displayWidth,
