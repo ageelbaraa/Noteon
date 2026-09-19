@@ -1382,6 +1382,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     if (!_canEditBody) {
       return;
     }
+    final media = ref.read(mediaStorageProvider);
+    Future<File?> resolveMedia(String relativePath) =>
+        media.fileFor(relativePath);
     try {
       switch (action) {
         case _NoteShareAction.text:
@@ -1395,12 +1398,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             context: context,
             title: _titleController.text,
             contentJson: _contentJson,
+            resolveMedia: resolveMedia,
           );
         case _NoteShareAction.pdf:
           await NoteShareActions.shareAsPdf(
             context: context,
             title: _titleController.text,
             contentJson: _contentJson,
+            resolveMedia: resolveMedia,
           );
       }
     } catch (_) {
@@ -2209,9 +2214,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                         showFontSize: true,
                         showStrikeThrough: true,
                         showInlineCode: false,
-                        showColorButton: true,
+                        // Text color caused "suddenly red" reports via Quill
+                        // inheritance after browse/paste. Keep picker off;
+                        // clear-format remains so pasted colors can be removed.
+                        showColorButton: false,
                         showBackgroundColorButton: false,
-                        showClearFormat: false,
+                        showClearFormat: true,
                         showHeaderStyle: true,
                         showListCheck: true,
                         showCodeBlock: false,

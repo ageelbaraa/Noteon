@@ -192,11 +192,19 @@ class NoteEditorBrowseCaretSync {
       // it honors skip, but not when the keyboard is already visible — so we
       // always restore false afterward.
       controller.skipRequestKeyboard = true;
+      // Critical: when the keyboard is already open, Quill's listener still
+      // calls _showCaretOnScreen() unless ignoreFocusOnTextChange is set.
+      // That animateTo fight against the user's scroll is the browse jitter.
+      controller.ignoreFocusOnTextChange = true;
       controller.updateSelection(
         TextSelection.collapsed(offset: offset),
         ChangeSource.local,
       );
+      // Drop inherited/toggled text color so typing after browse does not
+      // suddenly continue in a prior red (or other) span color.
+      controller.formatSelection(const ColorAttribute(null));
     } finally {
+      controller.ignoreFocusOnTextChange = false;
       controller.skipRequestKeyboard = false;
       _placingCaret = false;
     }
