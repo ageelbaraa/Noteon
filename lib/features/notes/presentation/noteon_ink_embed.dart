@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -33,7 +34,10 @@ class NoteonInkEmbedBuilder extends EmbedBuilder {
   Widget build(BuildContext context, EmbedContext embedContext) {
     final data = NoteonInkBlockEmbed.tryParseEmbeddable(embedContext.node.value) ??
         NoteonInkPayload.decode(embedContext.node.value.data);
+    // Key by preview path only — documentOffset shifts while typing above the
+    // embed and would remount State / re-trigger the file Future.
     return _NoteonEmbeddedInk(
+      key: ValueKey('ink:${data.previewPath}'),
       data: data,
       noteId: noteId,
       documentOffset: embedContext.node.documentOffset,
@@ -43,8 +47,9 @@ class NoteonInkEmbedBuilder extends EmbedBuilder {
   }
 }
 
-class _NoteonEmbeddedInk extends ConsumerWidget {
+class _NoteonEmbeddedInk extends ConsumerStatefulWidget {
   const _NoteonEmbeddedInk({
+    super.key,
     required this.data,
     required this.documentOffset,
     required this.readOnly,
@@ -59,58 +64,109 @@ class _NoteonEmbeddedInk extends ConsumerWidget {
   final NoteBlockInteraction? interaction;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NoteonEmbeddedInk> createState() => _NoteonEmbeddedInkState();
+}
+
+class _NoteonEmbeddedInkState extends ConsumerState<_NoteonEmbeddedInk> {
+  Future<File?>? _fileFuture;
+  String? _futurePath;
+  late int _documentOffset;
+
+  @override
+  void initState() {
+    super.initState();
+    _documentOffset = widget.documentOffset;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _ensureFileFuture();
+  }
+
+  @override
+  void didUpdateWidget(covariant _NoteonEmbeddedInk oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _documentOffset = widget.documentOffset;
+    if (oldWidget.data.previewPath != widget.data.previewPath ||
+        oldWidget.noteId != widget.noteId) {
+      _fileFuture = null;
+      _futurePath = null;
+      _ensureFileFuture();
+    }
+  }
+
+  void _ensureFileFuture() {
+    final path = widget.data.previewPath;
+    if (path.isEmpty) {
+      return;
+    }
+    if (_futurePath == path && _fileFuture != null) {
+      return;
+    }
+    _futurePath = path;
+    _fileFuture = ref.read(mediaStorageProvider).fileFor(path);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    if (data.isEmpty) {
+    if (widget.data.isEmpty) {
       return _missing(l10n.sketchSaveFailed);
     }
 
     final session = ref.watch(unlockedNoteSessionProvider);
     Uint8List? sessionBytes;
     if (session != null &&
-        noteId != null &&
-        session.noteId == noteId &&
-        session.mediaBytes.containsKey(data.previewPath)) {
-      sessionBytes = session.mediaBytes[data.previewPath];
+        widget.noteId != null &&
+        session.noteId == widget.noteId &&
+        session.mediaBytes.containsKey(widget.data.previewPath)) {
+      sessionBytes = session.mediaBytes[widget.data.previewPath];
     }
 
-    final preview = sessionBytes != null
-        ? _previewImage(MemoryImage(sessionBytes), theme, l10n)
-        : FutureBuilder(
-            future: ref.read(mediaStorageProvider).fileFor(data.previewPath),
-            builder: (context, snapshot) {
-              final file = snapshot.data;
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const SizedBox(
-                  height: 120,
-                  child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                );
-              }
-              if (file == null) {
-                return _missing(l10n.imageMissing);
-              }
-              return _previewImage(FileImage(file), theme, l10n);
-            },
-          );
+    final Widget preview;
+    if (sessionBytes != null) {
+      preview = _previewImage(MemoryImage(sessionBytes), theme, l10n);
+    } else {
+      preview = FutureBuilder<File?>(
+        // Stable future — recreating it on every Quill rebuild caused a
+        // loading-spinner flash while typing near ink embeds.
+        future: _fileFuture,
+        builder: (context, snapshot) {
+          final file = snapshot.data;
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const SizedBox(
+              height: 120,
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          if (file == null) {
+            return _missing(l10n.imageMissing);
+          }
+          return _previewImage(FileImage(file), theme, l10n);
+        },
+      );
+    }
 
-    if (readOnly || interaction == null) {
+    if (widget.readOnly || widget.interaction == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: preview,
       );
     }
 
+    final interaction = widget.interaction!;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: ValueListenableBuilder<NoteBlockSelection?>(
-        valueListenable: interaction!.selection,
+        valueListenable: interaction.selection,
         builder: (context, selection, _) {
           final selected = selection != null &&
               selection.block.kind == NoteBlockKind.ink &&
-              selection.block.start == documentOffset;
-          final blockIndex = interaction!.indexForOffset(
-                documentOffset,
+              selection.block.start == _documentOffset;
+          final blockIndex = interaction.indexForOffset(
+                _documentOffset,
                 NoteBlockKind.ink,
               ) ??
               0;
@@ -118,7 +174,7 @@ class _NoteonEmbeddedInk extends ConsumerWidget {
             selected: selected,
             blockIndex: blockIndex,
             onAcceptDrop: (from) {
-              interaction!.onAcceptDrop(fromIndex: from, toIndex: blockIndex);
+              interaction.onAcceptDrop(fromIndex: from, toIndex: blockIndex);
             },
             child: Material(
               color: Colors.transparent,
@@ -126,10 +182,10 @@ class _NoteonEmbeddedInk extends ConsumerWidget {
                 borderRadius: AppRadii.card,
                 onTap: () {
                   final blocks = NoteBlockModel.listBlocks(
-                    interaction!.controller.document,
+                    interaction.controller.document,
                   );
                   if (blockIndex >= 0 && blockIndex < blocks.length) {
-                    interaction!.onSelect(blocks[blockIndex]);
+                    interaction.onSelect(blocks[blockIndex]);
                   }
                 },
                 child: preview,
@@ -146,7 +202,7 @@ class _NoteonEmbeddedInk extends ConsumerWidget {
     ThemeData theme,
     AppLocalizations l10n,
   ) {
-    final width = data.displayWidth;
+    final width = widget.data.displayWidth;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -162,6 +218,7 @@ class _NoteonEmbeddedInk extends ConsumerWidget {
               child: Image(
                 image: provider,
                 fit: BoxFit.contain,
+                gaplessPlayback: true,
                 errorBuilder: (_, _, _) => _missing(l10n.imageMissing),
               ),
             ),

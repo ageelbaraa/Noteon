@@ -80,15 +80,21 @@ class _NoteEditorZoomViewportState extends State<NoteEditorZoomViewport> {
         child: ListenableBuilder(
           listenable: _transform,
           builder: (context, _) {
+            final matrix = _transform.value;
+            final child = SizedBox.expand(child: widget.child);
+            // Any non-null filterQuality (including FilterQuality.none) forces
+            // Flutter to bitmap-rasterize the child. At 1× that re-rasters the
+            // whole editor on every text paint and reads as a full-page flash
+            // when images/tables are present. Skip Transform at identity.
+            if (matrix.isIdentity()) {
+              return child;
+            }
+            final scale = matrix.getMaxScaleOnAxis();
             return Transform(
-              transform: _transform.value,
-              // Medium filtering while editing at 1× re-rasters embeds on every
-              // text frame and reads as flicker. Use none at identity; medium only
-              // when actually zoomed.
-              filterQuality: _transform.value.getMaxScaleOnAxis() > 1.02
-                  ? FilterQuality.medium
-                  : FilterQuality.none,
-              child: SizedBox.expand(child: widget.child),
+              transform: matrix,
+              filterQuality:
+                  (scale - 1.0).abs() > 0.02 ? FilterQuality.medium : null,
+              child: child,
             );
           },
         ),
