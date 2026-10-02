@@ -9,6 +9,7 @@ import '../../../shared/widgets/noteon_background.dart';
 import '../../../shared/widgets/noteon_group_surface.dart';
 import '../../../shared/widgets/noteon_logo.dart';
 import '../../../shared/widgets/noteon_section_header.dart';
+import '../../app_lock/presentation/app_lock_section.dart';
 import '../../transfer/presentation/backup_transfer_actions.dart';
 
 /// Theme, language, and about — preferences persist locally.
@@ -223,6 +224,11 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+            NoteonSectionHeader(
+              title: l10n.appLockSection,
+              padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
+            ),
+            const AppLockSection(),
             NoteonSectionHeader(
               title: l10n.privacy,
               padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),

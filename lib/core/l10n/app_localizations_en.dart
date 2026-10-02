@@ -888,4 +888,102 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nearbyNfcRetry => 'Try NFC again';
+
+  @override
+  String get appLockSection => 'Security';
+
+  @override
+  String get appLockTitle => 'App lock';
+
+  @override
+  String get appLockSubtitle => 'Ask for biometrics or a PIN when Noteon opens';
+
+  @override
+  String get appLockUnlockWith => 'Unlock with';
+
+  @override
+  String get appLockMethodBiometrics => 'Biometrics';
+
+  @override
+  String get appLockMethodPin => 'PIN';
+
+  @override
+  String get appLockChangePin => 'Change PIN';
+
+  @override
+  String get appLockReasonEnable => 'Confirm to turn on app lock';
+
+  @override
+  String get appLockReasonUnlock => 'Unlock Noteon';
+
+  @override
+  String get appLockReasonConfirm => 'Confirm it’s you to change app lock';
+
+  @override
+  String get appLockReasonReset =>
+      'Confirm with your screen lock to reset the PIN';
+
+  @override
+  String get appLockCreatePin => 'Create a PIN';
+
+  @override
+  String get appLockConfirmPin => 'Enter the PIN again';
+
+  @override
+  String get appLockPinMismatch => 'The PINs don’t match. Try again.';
+
+  @override
+  String get appLockEnterPin => 'Enter your PIN';
+
+  @override
+  String get appLockWrongPin => 'Wrong PIN';
+
+  @override
+  String appLockTryAgainIn(int seconds) {
+    return 'Too many attempts. Try again in $seconds s.';
+  }
+
+  @override
+  String get appLockUseBiometrics => 'Use biometrics';
+
+  @override
+  String get appLockForgotPin => 'Forgot PIN?';
+
+  @override
+  String get appLockNoScreenLockTitle => 'Can’t reset the PIN';
+
+  @override
+  String get appLockNoScreenLockBody =>
+      'This device has no screen lock, so Noteon can’t confirm it’s you.\n\n• Set a screen lock in your device settings, then tap Forgot PIN again. Nothing is lost.\n• Or clear Noteon’s app data in your device settings. This removes the PIN but also deletes all notes on this device, unless you restore an encrypted backup.';
+
+  @override
+  String get appLockSetNewPinTitle => 'Set a new PIN';
+
+  @override
+  String get appLockSetNewPinBody =>
+      'App lock was turned off. Set a new PIN to turn it back on.';
+
+  @override
+  String get appLockLater => 'Later';
+
+  @override
+  String get appLockSetPin => 'Set PIN';
+
+  @override
+  String get appLockNoBiometricsForPin =>
+      'Biometrics aren’t set up on this device.';
+
+  @override
+  String get appLockLockedTitle => 'Noteon is locked';
+
+  @override
+  String appLockPinProgress(int entered, int total) {
+    return '$entered of $total digits entered';
+  }
+
+  @override
+  String get appLockBackspace => 'Delete last digit';
+
+  @override
+  String get appLockOk => 'OK';
 }

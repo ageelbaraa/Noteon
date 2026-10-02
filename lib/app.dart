@@ -4,8 +4,10 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/l10n/app_localizations.dart';
+import 'core/providers/app_lock_providers.dart';
 import 'core/providers/settings_providers.dart';
 import 'core/theme/app_theme.dart';
+import 'features/app_lock/presentation/app_lock_gate.dart';
 import 'features/home/presentation/home_shell.dart';
 
 /// Root widget for Noteon. Wires theme, locale, and navigation shell.
@@ -18,6 +20,8 @@ class NoteonApp extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
 
     return MaterialApp(
+      navigatorKey: ref.watch(appNavigatorKeyProvider),
+      builder: (context, child) => AppLockGate(child: child!),
       onGenerateTitle: (context) => AppLocalizations.of(context).appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
