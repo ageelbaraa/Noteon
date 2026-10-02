@@ -1717,6 +1717,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Try NFC again'**
   String get nearbyNfcRetry;
+
+  /// No description provided for @appLockSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get appLockSection;
+
+  /// No description provided for @appLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App lock'**
+  String get appLockTitle;
+
+  /// No description provided for @appLockSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for biometrics or a PIN when Noteon opens'**
+  String get appLockSubtitle;
+
+  /// No description provided for @appLockUnlockWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock with'**
+  String get appLockUnlockWith;
+
+  /// No description provided for @appLockMethodBiometrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometrics'**
+  String get appLockMethodBiometrics;
+
+  /// No description provided for @appLockMethodPin.
+  ///
+  /// In en, this message translates to:
+  /// **'PIN'**
+  String get appLockMethodPin;
+
+  /// No description provided for @appLockChangePin.
+  ///
+  /// In en, this message translates to:
+  /// **'Change PIN'**
+  String get appLockChangePin;
+
+  /// No description provided for @appLockReasonEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm to turn on app lock'**
+  String get appLockReasonEnable;
+
+  /// No description provided for @appLockReasonUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock Noteon'**
+  String get appLockReasonUnlock;
+
+  /// No description provided for @appLockReasonConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm it’s you to change app lock'**
+  String get appLockReasonConfirm;
+
+  /// No description provided for @appLockReasonReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm with your screen lock to reset the PIN'**
+  String get appLockReasonReset;
+
+  /// No description provided for @appLockCreatePin.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a PIN'**
+  String get appLockCreatePin;
+
+  /// No description provided for @appLockConfirmPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the PIN again'**
+  String get appLockConfirmPin;
+
+  /// No description provided for @appLockPinMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The PINs don’t match. Try again.'**
+  String get appLockPinMismatch;
+
+  /// No description provided for @appLockEnterPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your PIN'**
+  String get appLockEnterPin;
+
+  /// No description provided for @appLockWrongPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong PIN'**
+  String get appLockWrongPin;
+
+  /// No description provided for @appLockTryAgainIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many attempts. Try again in {seconds} s.'**
+  String appLockTryAgainIn(int seconds);
+
+  /// No description provided for @appLockUseBiometrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Use biometrics'**
+  String get appLockUseBiometrics;
+
+  /// No description provided for @appLockForgotPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot PIN?'**
+  String get appLockForgotPin;
+
+  /// No description provided for @appLockNoScreenLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Can’t reset the PIN'**
+  String get appLockNoScreenLockTitle;
+
+  /// No description provided for @appLockNoScreenLockBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This device has no screen lock, so Noteon can’t confirm it’s you.\n\n• Set a screen lock in your device settings, then tap Forgot PIN again. Nothing is lost.\n• Or clear Noteon’s app data in your device settings. This removes the PIN but also deletes all notes on this device, unless you restore an encrypted backup.'**
+  String get appLockNoScreenLockBody;
+
+  /// No description provided for @appLockSetNewPinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a new PIN'**
+  String get appLockSetNewPinTitle;
+
+  /// No description provided for @appLockSetNewPinBody.
+  ///
+  /// In en, this message translates to:
+  /// **'App lock was turned off. Set a new PIN to turn it back on.'**
+  String get appLockSetNewPinBody;
+
+  /// No description provided for @appLockLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get appLockLater;
+
+  /// No description provided for @appLockSetPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Set PIN'**
+  String get appLockSetPin;
+
+  /// No description provided for @appLockNoBiometricsForPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometrics aren’t set up on this device.'**
+  String get appLockNoBiometricsForPin;
+
+  /// No description provided for @appLockLockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Noteon is locked'**
+  String get appLockLockedTitle;
+
+  /// No description provided for @appLockPinProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{entered} of {total} digits entered'**
+  String appLockPinProgress(int entered, int total);
+
+  /// No description provided for @appLockBackspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete last digit'**
+  String get appLockBackspace;
+
+  /// No description provided for @appLockOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get appLockOk;
 }
 
 class _AppLocalizationsDelegate

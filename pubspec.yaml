@@ -39,6 +39,7 @@ dependencies:
   just_audio: ^0.10.6
   pdfrx: ^2.4.7
   google_mlkit_text_recognition: ^0.16.0
+  local_auth: ^3.0.2
 
 flutter:
   uses-material-design: true

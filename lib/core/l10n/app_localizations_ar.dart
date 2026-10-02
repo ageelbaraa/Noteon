@@ -878,4 +878,100 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get nearbyNfcRetry => 'إعادة محاولة NFC';
+
+  @override
+  String get appLockSection => 'الأمان';
+
+  @override
+  String get appLockTitle => 'قفل التطبيق';
+
+  @override
+  String get appLockSubtitle => 'اطلب البصمة أو رمز PIN عند فتح Noteon';
+
+  @override
+  String get appLockUnlockWith => 'إلغاء القفل باستخدام';
+
+  @override
+  String get appLockMethodBiometrics => 'البصمة';
+
+  @override
+  String get appLockMethodPin => 'رمز PIN';
+
+  @override
+  String get appLockChangePin => 'تغيير رمز PIN';
+
+  @override
+  String get appLockReasonEnable => 'أكّد لتشغيل قفل التطبيق';
+
+  @override
+  String get appLockReasonUnlock => 'افتح Noteon';
+
+  @override
+  String get appLockReasonConfirm => 'أكّد هويتك لتغيير قفل التطبيق';
+
+  @override
+  String get appLockReasonReset => 'أكّد بقفل الشاشة لإعادة تعيين رمز PIN';
+
+  @override
+  String get appLockCreatePin => 'أنشئ رمز PIN';
+
+  @override
+  String get appLockConfirmPin => 'أدخل رمز PIN مرة أخرى';
+
+  @override
+  String get appLockPinMismatch => 'الرمزان غير متطابقين. حاول مرة أخرى.';
+
+  @override
+  String get appLockEnterPin => 'أدخل رمز PIN';
+
+  @override
+  String get appLockWrongPin => 'رمز PIN غير صحيح';
+
+  @override
+  String appLockTryAgainIn(int seconds) {
+    return 'محاولات كثيرة. حاول مرة أخرى بعد $seconds ث.';
+  }
+
+  @override
+  String get appLockUseBiometrics => 'استخدم البصمة';
+
+  @override
+  String get appLockForgotPin => 'نسيت رمز PIN؟';
+
+  @override
+  String get appLockNoScreenLockTitle => 'تعذّرت إعادة تعيين الرمز';
+
+  @override
+  String get appLockNoScreenLockBody =>
+      'لا يحتوي هذا الجهاز على قفل شاشة، لذا لا يستطيع Noteon التأكد من هويتك.\n\n• فعّل قفل الشاشة من إعدادات الجهاز ثم اضغط «نسيت رمز PIN؟» مرة أخرى. لن يضيع شيء.\n• أو امسح بيانات Noteon من إعدادات الجهاز. يزيل ذلك الرمز لكنه يحذف أيضًا كل الملاحظات على هذا الجهاز، إلا إذا استعدت نسخة احتياطية مشفّرة.';
+
+  @override
+  String get appLockSetNewPinTitle => 'عيّن رمز PIN جديدًا';
+
+  @override
+  String get appLockSetNewPinBody =>
+      'تم إيقاف قفل التطبيق. عيّن رمز PIN جديدًا لتشغيله مرة أخرى.';
+
+  @override
+  String get appLockLater => 'لاحقًا';
+
+  @override
+  String get appLockSetPin => 'تعيين الرمز';
+
+  @override
+  String get appLockNoBiometricsForPin => 'البصمة غير مفعّلة على هذا الجهاز.';
+
+  @override
+  String get appLockLockedTitle => 'Noteon مقفل';
+
+  @override
+  String appLockPinProgress(int entered, int total) {
+    return 'تم إدخال $entered من $total أرقام';
+  }
+
+  @override
+  String get appLockBackspace => 'حذف آخر رقم';
+
+  @override
+  String get appLockOk => 'حسنًا';
 }
