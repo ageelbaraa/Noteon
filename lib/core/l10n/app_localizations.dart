@@ -212,11 +212,11 @@ abstract class AppLocalizations {
   /// **'Noteon is a simple and secure notes app that keeps your data locally on your device.'**
   String get aboutDescription;
 
-  /// No description provided for @versionLabel.
+  /// No description provided for @versionBuildLabel.
   ///
   /// In en, this message translates to:
-  /// **'Version {version}'**
-  String versionLabel(String version);
+  /// **'Version {version} (build {build})'**
+  String versionBuildLabel(String version, String build);
 
   /// No description provided for @emptyNotesTitle.
   ///

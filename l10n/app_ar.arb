@@ -19,7 +19,7 @@
   "languageArabic": "العربية",
   "about": "حول التطبيق",
   "aboutDescription": "Noteon تطبيق ملاحظات بسيط وآمن يحفظ بياناتك محلياً على جهازك.",
-  "versionLabel": "الإصدار {version}",
+  "versionBuildLabel": "الإصدار {version} (البناء {build})",
   "emptyNotesTitle": "لا توجد ملاحظات بعد",
   "emptyNotesSubtitle": "أنشئ ملاحظتك الأولى للبدء.",
   "newNote": "ملاحظة جديدة",

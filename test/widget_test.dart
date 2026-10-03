@@ -7,6 +7,7 @@ import 'package:noteon/features/folders/data/folder.dart';
 import 'package:noteon/features/notes/data/note.dart';
 import 'package:noteon/features/notes/presentation/notes_providers.dart';
 import 'package:noteon/features/tags/data/tag.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -23,6 +24,14 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           localeProvider.overrideWith(_EnglishLocale.new),
+          packageInfoProvider.overrideWith(
+            (ref) async => PackageInfo(
+              appName: 'Noteon',
+              packageName: 'com.noteon.app',
+              version: '1.0.0',
+              buildNumber: '19',
+            ),
+          ),
           notesListProvider.overrideWith(_EmptyNotesList.new),
           foldersListProvider.overrideWith(_EmptyFoldersList.new),
           tagsListProvider.overrideWith(_EmptyTagsList.new),
@@ -70,7 +79,7 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     await tester.pump();
-    expect(find.textContaining('Version'), findsOneWidget);
+    expect(find.text('Version 1.0.0 (build 19)'), findsOneWidget);
   });
 
   testWidgets('theme preference survives notifier recreation', (tester) async {

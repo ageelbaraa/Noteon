@@ -19,10 +19,13 @@
   "languageArabic": "Arabic",
   "about": "About",
   "aboutDescription": "Noteon is a simple and secure notes app that keeps your data locally on your device.",
-  "versionLabel": "Version {version}",
-  "@versionLabel": {
+  "versionBuildLabel": "Version {version} (build {build})",
+  "@versionBuildLabel": {
     "placeholders": {
       "version": {
+        "type": "String"
+      },
+      "build": {
         "type": "String"
       }
     }

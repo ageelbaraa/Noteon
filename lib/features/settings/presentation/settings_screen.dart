@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_constants.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/providers/settings_providers.dart';
 import '../../../core/theme/app_colors.dart';
@@ -22,6 +21,7 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
+    final packageInfo = ref.watch(packageInfoProvider).valueOrNull;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -312,7 +312,12 @@ class SettingsScreen extends ConsumerWidget {
                                 borderRadius: BorderRadius.circular(AppRadii.sm),
                               ),
                               child: Text(
-                                l10n.versionLabel(AppConstants.appVersion),
+                                packageInfo == null
+                                    ? ''
+                                    : l10n.versionBuildLabel(
+                                        packageInfo.version,
+                                        packageInfo.buildNumber,
+                                      ),
                                 style: theme.textTheme.labelMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
                                 ),

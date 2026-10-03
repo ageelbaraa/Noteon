@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../settings/app_settings_store.dart';
@@ -15,6 +16,11 @@ export '../settings/app_settings_store.dart'
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('SharedPreferences must be provided in main');
 });
+
+/// Version and build number read from the installed app (pubspec `version`).
+final packageInfoProvider = FutureProvider<PackageInfo>(
+  (ref) => PackageInfo.fromPlatform(),
+);
 
 final appSettingsStoreProvider = Provider<AppSettingsStore>((ref) {
   return AppSettingsStore(ref.watch(sharedPreferencesProvider));
