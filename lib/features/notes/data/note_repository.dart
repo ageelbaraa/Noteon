@@ -92,6 +92,20 @@ class NoteRepository {
     await update(note);
   }
 
+  /// Moves many notes into [folderId] (or unfiled when null) in one transaction.
+  Future<void> setFolders(Iterable<Note> notes, int? folderId) async {
+    final list = notes.toList(growable: false);
+    if (list.isEmpty) {
+      return;
+    }
+    final now = DateTime.now();
+    for (final note in list) {
+      note.folderId = folderId;
+      note.updatedAt = now;
+    }
+    await _isar.writeTxn(() => _isar.notes.putAll(list));
+  }
+
   Future<void> setTagIds(Note note, List<int> tagIds) async {
     note.tagIds = List<int>.from(tagIds);
     await update(note);

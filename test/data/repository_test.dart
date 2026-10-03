@@ -156,6 +156,32 @@ void main() {
       expect(note.tagIds, containsAll([tagA, tagB]));
     });
 
+    test('setFolders moves notes from mixed folders in one batch', () async {
+      final a = await folders.create(name: 'A');
+      final b = await folders.create(name: 'B');
+      final id1 = await notes.create(title: 'One', folderId: a);
+      final id2 = await notes.create(title: 'Two', folderId: b);
+      final id3 = await notes.create(title: 'Three');
+
+      final batch = [
+        (await notes.getById(id1))!,
+        (await notes.getById(id2))!,
+        (await notes.getById(id3))!,
+      ];
+      await notes.setFolders(batch, b);
+
+      expect((await notes.getById(id1))!.folderId, b);
+      expect((await notes.getById(id2))!.folderId, b);
+      expect((await notes.getById(id3))!.folderId, b);
+      expect((await notes.getByFolderId(a)), isEmpty);
+      expect((await notes.getByFolderId(b)).map((n) => n.id), containsAll([id1, id2, id3]));
+
+      await notes.setFolders(batch, null);
+      expect((await notes.getById(id1))!.folderId, isNull);
+      expect((await notes.getById(id2))!.folderId, isNull);
+      expect((await notes.getById(id3))!.folderId, isNull);
+    });
+
     test('stores media path metadata without binary payloads', () async {
       final media = MediaRef()
         ..relativePath = 'images/sample.jpg'

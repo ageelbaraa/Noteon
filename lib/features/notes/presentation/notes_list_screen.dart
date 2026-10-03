@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/providers/database_providers.dart';
 import '../../../core/providers/settings_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_motion.dart';
@@ -15,6 +16,7 @@ import '../../folders/data/folder.dart';
 import '../data/note.dart';
 import '../domain/note_date_grouper.dart';
 import 'note_editor_screen.dart';
+import 'note_folder_picker.dart';
 import 'notes_organize_drawer.dart';
 import 'notes_providers.dart';
 
@@ -29,6 +31,9 @@ class NotesListScreen extends ConsumerStatefulWidget {
 class _NotesListScreenState extends ConsumerState<NotesListScreen> {
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
+  final Set<int> _selectedIds = {};
+  bool _selecting = false;
+  bool _moving = false;
 
   @override
   void dispose() {
@@ -45,7 +50,124 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     ]);
   }
 
+  void _exitSelection() {
+    setState(() {
+      _selecting = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _enterSelection(Note note) {
+    setState(() {
+      _selecting = true;
+      _selectedIds
+        ..clear()
+        ..add(note.id);
+    });
+  }
+
+  void _toggleSelected(Note note) {
+    setState(() {
+      if (!_selectedIds.remove(note.id)) {
+        _selectedIds.add(note.id);
+      }
+      if (_selectedIds.isEmpty) {
+        _selecting = false;
+      }
+    });
+  }
+
+  void _onNoteTap(Note note) {
+    if (_selecting) {
+      _toggleSelected(note);
+      return;
+    }
+    _openNote(note);
+  }
+
+  void _onNoteLongPress(Note note) {
+    if (_selecting) {
+      _toggleSelected(note);
+      return;
+    }
+    _enterSelection(note);
+  }
+
+  List<Note> _visibleNotes(List<NoteDateSection> sections) {
+    return [
+      for (final section in sections) ...section.notes,
+    ];
+  }
+
+  void _selectAllVisible(List<NoteDateSection> sections) {
+    setState(() {
+      _selecting = true;
+      _selectedIds
+        ..clear()
+        ..addAll(_visibleNotes(sections).map((note) => note.id));
+    });
+  }
+
+  Future<void> _moveSelected(List<NoteDateSection> sections) async {
+    if (_moving || _selectedIds.isEmpty) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final folders = ref.read(foldersListProvider).valueOrNull ?? const [];
+    final selected = await showNoteFolderPicker(
+      context,
+      folders: folders,
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+
+    final folderId = selected == -1 ? null : selected;
+    final byId = {
+      for (final note in _visibleNotes(sections)) note.id: note,
+    };
+    // Prefer live list cache so notes from mixed folders still resolve.
+    final cached = ref.read(notesListProvider).valueOrNull ?? const <Note>[];
+    for (final note in cached) {
+      byId.putIfAbsent(note.id, () => note);
+    }
+    final toMove = <Note>[
+      for (final id in _selectedIds)
+        if (byId[id] != null) byId[id]!,
+    ];
+    if (toMove.isEmpty) {
+      return;
+    }
+
+    setState(() => _moving = true);
+    try {
+      await ref.read(noteRepositoryProvider).setFolders(toMove, folderId);
+      await ref.read(notesListProvider.notifier).refresh();
+      if (!mounted) {
+        return;
+      }
+      _exitSelection();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.notesMovedMessage(toMove.length))),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.notesMoveFailed)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _moving = false);
+      }
+    }
+  }
+
   Future<void> _openNewNote() async {
+    if (_selecting) {
+      return;
+    }
     final filter = ref.read(notesBrowseFilterProvider);
     final initialFolderId =
         filter.folderScope == FolderScope.folder ? filter.folderId : null;
@@ -103,50 +225,93 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
       }
     }
 
-    return Scaffold(
+    final sections = groupedAsync.valueOrNull ?? const <NoteDateSection>[];
+
+    return PopScope(
+      canPop: !_selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _selecting) {
+          _exitSelection();
+        }
+      },
+      child: Scaffold(
       backgroundColor: Colors.transparent,
-      drawer: const NotesOrganizeDrawer(),
+      drawer: _selecting ? null : const NotesOrganizeDrawer(),
       appBar: AppBar(
+        leading: _selecting
+            ? IconButton(
+                tooltip: l10n.cancel,
+                onPressed: _moving ? null : _exitSelection,
+                icon: const Icon(Icons.close_rounded),
+              )
+            : null,
         title: Text(
-          l10n.appName,
+          _selecting
+              ? l10n.notesSelectedCount(_selectedIds.length)
+              : l10n.appName,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
             letterSpacing: -0.4,
           ),
         ),
         actions: [
-          IconButton(
-            tooltip: viewMode == NotesViewMode.list
-                ? l10n.notesViewGrid
-                : l10n.notesViewList,
-            onPressed: () =>
-                ref.read(notesViewModeProvider.notifier).toggle(),
-            icon: Icon(
-              viewMode == NotesViewMode.list
-                  ? Icons.grid_view_rounded
-                  : Icons.view_agenda_rounded,
+          if (_selecting) ...[
+            IconButton(
+              tooltip: l10n.selectAllNotes,
+              onPressed: _moving || sections.isEmpty
+                  ? null
+                  : () => _selectAllVisible(sections),
+              icon: const Icon(Icons.select_all_rounded),
             ),
-          ),
-          IconButton(
-            tooltip: l10n.searchNotes,
-            onPressed: () {
-              final next = !filter.searchVisible;
-              ref
-                  .read(notesBrowseFilterProvider.notifier)
-                  .setSearchVisible(next);
-              if (next) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _searchFocus.requestFocus();
-                });
-              } else {
-                _searchController.clear();
-                _searchFocus.unfocus();
-              }
-            },
-            icon: Icon(
-              filter.searchVisible ? Icons.close_rounded : Icons.search_rounded,
+            IconButton(
+              tooltip: l10n.moveToFolder,
+              onPressed: _moving || _selectedIds.isEmpty
+                  ? null
+                  : () => _moveSelected(sections),
+              icon: _moving
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.drive_file_move_outlined),
             ),
-          ),
+          ] else ...[
+            IconButton(
+              tooltip: viewMode == NotesViewMode.list
+                  ? l10n.notesViewGrid
+                  : l10n.notesViewList,
+              onPressed: () =>
+                  ref.read(notesViewModeProvider.notifier).toggle(),
+              icon: Icon(
+                viewMode == NotesViewMode.list
+                    ? Icons.grid_view_rounded
+                    : Icons.view_agenda_rounded,
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.searchNotes,
+              onPressed: () {
+                final next = !filter.searchVisible;
+                ref
+                    .read(notesBrowseFilterProvider.notifier)
+                    .setSearchVisible(next);
+                if (next) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _searchFocus.requestFocus();
+                  });
+                } else {
+                  _searchController.clear();
+                  _searchFocus.unfocus();
+                }
+              },
+              icon: Icon(
+                filter.searchVisible
+                    ? Icons.close_rounded
+                    : Icons.search_rounded,
+              ),
+            ),
+          ],
         ],
       ),
       body: NoteonBackground(
@@ -272,13 +437,16 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
 
                   return RefreshIndicator(
                     color: AppColors.teal,
-                    onRefresh: _refreshAll,
+                    onRefresh: _selecting ? () async {} : _refreshAll,
                     child: viewMode == NotesViewMode.grid
                         ? _NotesGridBody(
                             sections: sections,
                             bucketLabel: (bucket) =>
                                 _bucketLabel(l10n, bucket),
-                            onOpen: _openNote,
+                            onTapNote: _onNoteTap,
+                            onLongPressNote: _onNoteLongPress,
+                            selectionMode: _selecting,
+                            selectedIds: _selectedIds,
                             leading: subfoldersHeader,
                             emptyNotesPlaceholder: totalNotes == 0
                                 ? NoteonEmptyState(
@@ -292,7 +460,10 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             sections: sections,
                             bucketLabel: (bucket) =>
                                 _bucketLabel(l10n, bucket),
-                            onOpen: _openNote,
+                            onTapNote: _onNoteTap,
+                            onLongPressNote: _onNoteLongPress,
+                            selectionMode: _selecting,
+                            selectedIds: _selectedIds,
                             leading: subfoldersHeader,
                             emptyNotesPlaceholder: totalNotes == 0
                                 ? NoteonEmptyState(
@@ -309,12 +480,15 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openNewNote,
-        elevation: 3,
-        icon: const Icon(Icons.add_rounded),
-        label: Text(l10n.newNote),
-      ),
+      floatingActionButton: _selecting
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _openNewNote,
+              elevation: 3,
+              icon: const Icon(Icons.add_rounded),
+              label: Text(l10n.newNote),
+            ),
+    ),
     );
   }
 
@@ -457,14 +631,20 @@ class _NotesListBody extends StatelessWidget {
   const _NotesListBody({
     required this.sections,
     required this.bucketLabel,
-    required this.onOpen,
+    required this.onTapNote,
+    required this.onLongPressNote,
+    required this.selectionMode,
+    required this.selectedIds,
     this.leading,
     this.emptyNotesPlaceholder,
   });
 
   final List<NoteDateSection> sections;
   final String Function(NoteDateBucket bucket) bucketLabel;
-  final ValueChanged<Note> onOpen;
+  final ValueChanged<Note> onTapNote;
+  final ValueChanged<Note> onLongPressNote;
+  final bool selectionMode;
+  final Set<int> selectedIds;
   final Widget? leading;
   final Widget? emptyNotesPlaceholder;
 
@@ -522,7 +702,10 @@ class _NotesListBody extends StatelessWidget {
               if (i > 0) const SizedBox(height: 10),
               NoteonNoteTile(
                 note: section.notes[i],
-                onTap: () => onOpen(section.notes[i]),
+                selected: selectedIds.contains(section.notes[i].id),
+                selectionMode: selectionMode,
+                onTap: () => onTapNote(section.notes[i]),
+                onLongPress: () => onLongPressNote(section.notes[i]),
               ),
             ],
           ],
@@ -536,14 +719,20 @@ class _NotesGridBody extends StatelessWidget {
   const _NotesGridBody({
     required this.sections,
     required this.bucketLabel,
-    required this.onOpen,
+    required this.onTapNote,
+    required this.onLongPressNote,
+    required this.selectionMode,
+    required this.selectedIds,
     this.leading,
     this.emptyNotesPlaceholder,
   });
 
   final List<NoteDateSection> sections;
   final String Function(NoteDateBucket bucket) bucketLabel;
-  final ValueChanged<Note> onOpen;
+  final ValueChanged<Note> onTapNote;
+  final ValueChanged<Note> onLongPressNote;
+  final bool selectionMode;
+  final Set<int> selectedIds;
   final Widget? leading;
   final Widget? emptyNotesPlaceholder;
 
@@ -613,7 +802,10 @@ class _NotesGridBody extends StatelessWidget {
                 final note = section.notes[i];
                 return NoteonNoteGridCard(
                   note: note,
-                  onTap: () => onOpen(note),
+                  selected: selectedIds.contains(note.id),
+                  selectionMode: selectionMode,
+                  onTap: () => onTapNote(note),
+                  onLongPress: () => onLongPressNote(note),
                 );
               },
             ),

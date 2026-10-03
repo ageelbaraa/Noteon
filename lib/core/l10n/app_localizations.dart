@@ -656,6 +656,36 @@ abstract class AppLocalizations {
   /// **'No folder'**
   String get noFolder;
 
+  /// No description provided for @moveToFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to folder'**
+  String get moveToFolder;
+
+  /// No description provided for @notesSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String notesSelectedCount(int count);
+
+  /// No description provided for @selectAllNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get selectAllNotes;
+
+  /// No description provided for @notesMovedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved {count} notes'**
+  String notesMovedMessage(int count);
+
+  /// No description provided for @notesMoveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not move the notes. Please try again.'**
+  String get notesMoveFailed;
+
   /// No description provided for @manageFolders.
   ///
   /// In en, this message translates to:

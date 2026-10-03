@@ -36,6 +36,7 @@ import '../data/noteon_table_data.dart';
 import 'note_audio_recorder_sheet.dart';
 import 'note_block_chrome.dart';
 import 'note_editor_browse_caret_sync.dart';
+import 'note_folder_picker.dart';
 import 'note_editor_styles.dart';
 import 'note_page_background.dart';
 import 'note_password_dialogs.dart';
@@ -1722,40 +1723,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   }
 
   Future<void> _pickFolder(List<Folder> folders) async {
-    final l10n = AppLocalizations.of(context);
-    final selected = await showModalBottomSheet<int?>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.inbox_outlined),
-                title: Text(l10n.noFolder),
-                onTap: () => Navigator.pop(context, -1),
-              ),
-              for (final folder in folders)
-                ListTile(
-                  leading: Icon(
-                    folder.parentFolderId == null
-                        ? Icons.folder_outlined
-                        : Icons.folder_open_outlined,
-                    color: AppColors.teal,
-                  ),
-                  title: Text(
-                    folder.parentFolderId == null
-                        ? folder.name
-                        : '  ${folder.name}',
-                  ),
-                  selected: _folderId == folder.id,
-                  onTap: () => Navigator.pop(context, folder.id),
-                ),
-            ],
-          ),
-        );
-      },
+    final selected = await showNoteFolderPicker(
+      context,
+      folders: folders,
+      selectedFolderId: _folderId,
     );
 
     if (selected == null) {

@@ -306,6 +306,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noFolder => 'No folder';
 
   @override
+  String get moveToFolder => 'Move to folder';
+
+  @override
+  String notesSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get selectAllNotes => 'Select all';
+
+  @override
+  String notesMovedMessage(int count) {
+    return 'Moved $count notes';
+  }
+
+  @override
+  String get notesMoveFailed => 'Could not move the notes. Please try again.';
+
+  @override
   String get manageFolders => 'Manage folders';
 
   @override

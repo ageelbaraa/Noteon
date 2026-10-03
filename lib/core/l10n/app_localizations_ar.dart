@@ -303,6 +303,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get noFolder => 'بدون مجلد';
 
   @override
+  String get moveToFolder => 'نقل إلى مجلد';
+
+  @override
+  String notesSelectedCount(int count) {
+    return '$count محددة';
+  }
+
+  @override
+  String get selectAllNotes => 'تحديد الكل';
+
+  @override
+  String notesMovedMessage(int count) {
+    return 'تم نقل $count ملاحظات';
+  }
+
+  @override
+  String get notesMoveFailed => 'تعذر نقل الملاحظات. حاول مرة أخرى.';
+
+  @override
   String get manageFolders => 'إدارة المجلدات';
 
   @override

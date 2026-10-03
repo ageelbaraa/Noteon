@@ -41,7 +41,7 @@ class AppLockSection extends ConsumerWidget {
                     leading: const Icon(Icons.fingerprint),
                     title: Text(l10n.appLockUnlockWith),
                     trailing: SegmentedButton<AppLockMethod>(
-                      showSelectedIcon: false,
+                      showSelectedIcon: true,
                       segments: [
                         ButtonSegment(
                           value: AppLockMethod.biometric,

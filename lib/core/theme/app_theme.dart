@@ -261,6 +261,38 @@ abstract final class AppTheme {
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: AppRadii.control),
           ),
+          // Selected segments must read clearly in dark mode — default
+          // primaryContainer (tealDeep) blends into navy surfaces.
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return AppColors.teal.withValues(alpha: isLight ? 0.18 : 0.32);
+            }
+            return Colors.transparent;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return isLight ? AppColors.tealDark : AppColors.tealLight;
+            }
+            return colorScheme.onSurfaceVariant;
+          }),
+          side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return BorderSide(
+                color: AppColors.teal.withValues(alpha: isLight ? 0.55 : 0.75),
+                width: 1.4,
+              );
+            }
+            return BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+            );
+          }),
+          textStyle: WidgetStateProperty.resolveWith((states) {
+            final base = refinedText.labelLarge;
+            if (states.contains(WidgetState.selected)) {
+              return base?.copyWith(fontWeight: FontWeight.w700);
+            }
+            return base?.copyWith(fontWeight: FontWeight.w500);
+          }),
         ),
       ),
       snackBarTheme: SnackBarThemeData(

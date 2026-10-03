@@ -117,6 +117,25 @@
   "noteFolder": "Folder",
   "noteTags": "Tags",
   "noFolder": "No folder",
+  "moveToFolder": "Move to folder",
+  "notesSelectedCount": "{count} selected",
+  "@notesSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectAllNotes": "Select all",
+  "notesMovedMessage": "Moved {count} notes",
+  "@notesMovedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notesMoveFailed": "Could not move the notes. Please try again.",
   "manageFolders": "Manage folders",
   "manageTags": "Manage tags",
   "filterByTag": "Tag: {name}",

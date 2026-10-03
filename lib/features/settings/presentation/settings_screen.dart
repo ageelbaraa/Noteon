@@ -50,7 +50,7 @@ class SettingsScreen extends ConsumerWidget {
                     builder: (context, constraints) {
                       final compact = constraints.maxWidth < 340;
                       return SegmentedButton<AppThemeMode>(
-                        showSelectedIcon: false,
+                        showSelectedIcon: true,
                         segments: [
                           ButtonSegment(
                             value: AppThemeMode.system,
@@ -96,7 +96,7 @@ class SettingsScreen extends ConsumerWidget {
                       final compact = constraints.maxWidth < 340;
                       final pageBg = ref.watch(notePageBackgroundProvider);
                       return SegmentedButton<NotePageBackground>(
-                        showSelectedIcon: false,
+                        showSelectedIcon: true,
                         segments: [
                           ButtonSegment(
                             value: NotePageBackground.plain,
@@ -147,7 +147,7 @@ class SettingsScreen extends ConsumerWidget {
                     builder: (context, constraints) {
                       final compact = constraints.maxWidth < 340;
                       final button = SegmentedButton<String>(
-                        showSelectedIcon: false,
+                        showSelectedIcon: true,
                         segments: [
                           ButtonSegment(
                             value: 'system',

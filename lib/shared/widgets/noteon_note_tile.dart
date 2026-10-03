@@ -12,10 +12,16 @@ class NoteonNoteTile extends StatelessWidget {
     super.key,
     required this.note,
     required this.onTap,
+    this.onLongPress,
+    this.selected = false,
+    this.selectionMode = false,
   });
 
   final Note note;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final bool selected;
+  final bool selectionMode;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +29,7 @@ class NoteonNoteTile extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final accent = isDark ? AppColors.tealLight : AppColors.tealDark;
     final locale = Localizations.localeOf(context).toString();
     final dateLabel = DateFormat.yMMMd(locale).add_jm().format(note.updatedAt);
 
@@ -32,101 +39,133 @@ class NoteonNoteTile extends StatelessWidget {
         : NoteContentCodec.plainTextPreview(note.contentJson);
     final previewText = preview.isEmpty ? l10n.emptyNotePreview : preview;
 
-    return Material(
-      color: theme.cardTheme.color ?? scheme.surfaceContainerHigh,
-      borderRadius: AppRadii.card,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
+    return Semantics(
+      selected: selectionMode ? selected : null,
+      button: true,
+      child: Material(
+        color: selected
+            ? AppColors.teal.withValues(alpha: isDark ? 0.22 : 0.12)
+            : theme.cardTheme.color ?? scheme.surfaceContainerHigh,
         borderRadius: AppRadii.card,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: AppRadii.card,
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.4),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: AppRadii.card,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: AppRadii.card,
+              border: Border.all(
+                color: selected
+                    ? AppColors.teal.withValues(alpha: isDark ? 0.75 : 0.55)
+                    : scheme.outlineVariant.withValues(alpha: 0.4),
+                width: selected ? 1.6 : 1,
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md + 2,
-              AppSpacing.lg,
-              AppSpacing.md + 2,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                    height: 1.25,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  previewText,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Text(
-                      dateLabel,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
-                        fontWeight: FontWeight.w500,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.md + 2,
+                AppSpacing.lg,
+                AppSpacing.md + 2,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (selectionMode) ...[
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        end: 12,
+                        top: 2,
+                      ),
+                      child: Icon(
+                        selected
+                            ? Icons.check_circle_rounded
+                            : Icons.circle_outlined,
+                        size: 22,
+                        color: selected ? accent : scheme.onSurfaceVariant,
                       ),
                     ),
-                    if (note.isLocked) ...[
-                      const SizedBox(width: 10),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.teal.withValues(
-                            alpha: isDark ? 0.22 : 0.1,
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                            height: 1.25,
+                            color: selected ? accent : null,
                           ),
-                          borderRadius: BorderRadius.circular(AppRadii.sm),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        const SizedBox(height: 6),
+                        Text(
+                          previewText,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
                           children: [
-                            Icon(
-                              Icons.lock_rounded,
-                              size: 12,
-                              color: isDark
-                                  ? AppColors.tealLight
-                                  : AppColors.tealDark,
-                            ),
-                            const SizedBox(width: 4),
                             Text(
-                              l10n.lockedNotePreview,
+                              dateLabel,
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: isDark
-                                    ? AppColors.tealLight
-                                    : AppColors.tealDark,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
+                                color: scheme.onSurfaceVariant
+                                    .withValues(alpha: 0.9),
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
+                            if (note.isLocked) ...[
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.teal.withValues(
+                                    alpha: isDark ? 0.22 : 0.1,
+                                  ),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadii.sm),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.lock_rounded,
+                                      size: 12,
+                                      color: accent,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      l10n.lockedNotePreview,
+                                      style:
+                                          theme.textTheme.labelSmall?.copyWith(
+                                        color: accent,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ],
                         ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -141,10 +180,16 @@ class NoteonNoteGridCard extends StatelessWidget {
     super.key,
     required this.note,
     required this.onTap,
+    this.onLongPress,
+    this.selected = false,
+    this.selectionMode = false,
   });
 
   final Note note;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final bool selected;
+  final bool selectionMode;
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +197,7 @@ class NoteonNoteGridCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final accent = isDark ? AppColors.tealLight : AppColors.tealDark;
     final locale = Localizations.localeOf(context).toString();
     final dateLabel = DateFormat.MMMd(locale).format(note.updatedAt);
 
@@ -161,68 +207,89 @@ class NoteonNoteGridCard extends StatelessWidget {
         : NoteContentCodec.plainTextPreview(note.contentJson);
     final previewText = preview.isEmpty ? l10n.emptyNotePreview : preview;
 
-    return Material(
-      color: theme.cardTheme.color ?? scheme.surfaceContainerHigh,
-      borderRadius: AppRadii.card,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
+    return Semantics(
+      selected: selectionMode ? selected : null,
+      button: true,
+      child: Material(
+        color: selected
+            ? AppColors.teal.withValues(alpha: isDark ? 0.22 : 0.12)
+            : theme.cardTheme.color ?? scheme.surfaceContainerHigh,
         borderRadius: AppRadii.card,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: AppRadii.card,
-            border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.4),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: AppRadii.card,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: AppRadii.card,
+              border: Border.all(
+                color: selected
+                    ? AppColors.teal.withValues(alpha: isDark ? 0.75 : 0.55)
+                    : scheme.outlineVariant.withValues(alpha: 0.4),
+                width: selected ? 1.6 : 1,
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: -0.2,
-                          height: 1.25,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (selectionMode) ...[
+                        Icon(
+                          selected
+                              ? Icons.check_circle_rounded
+                              : Icons.circle_outlined,
+                          size: 20,
+                          color: selected ? accent : scheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                            height: 1.25,
+                            color: selected ? accent : null,
+                          ),
                         ),
                       ),
-                    ),
-                    if (note.isLocked)
-                      Icon(
-                        Icons.lock_rounded,
-                        size: 14,
-                        color: isDark ? AppColors.tealLight : AppColors.tealDark,
+                      if (note.isLocked)
+                        Icon(
+                          Icons.lock_rounded,
+                          size: 14,
+                          color: accent,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: Text(
+                      previewText,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        height: 1.35,
                       ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: Text(
-                    previewText,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      height: 1.35,
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  dateLabel,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 8),
+                  Text(
+                    dateLabel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.9),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
