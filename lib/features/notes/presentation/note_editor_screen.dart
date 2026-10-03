@@ -109,6 +109,16 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   /// True when this session created a persisted note that may need discard.
   bool _isNewDraft = false;
 
+  /// True when this session wrote list-visible note data (kept create, folder,
+  /// tags, content, lock metadata). Autosave clears dirty before leave, so the
+  /// final persist often returns false even though the DB already changed —
+  /// the notes list refreshes only when the editor pops `true`.
+  bool _listNeedsRefresh = false;
+
+  /// In-flight persist so leave can await an active autosave instead of
+  /// returning "unchanged" while a write is still committing.
+  Future<bool>? _persistInFlight;
+
   static const _autosaveDelay = Duration(milliseconds: 1200);
 
   bool get _dirty => _dirtyListenable.value;
@@ -271,9 +281,35 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   }
 
   Future<bool> _persistChanges({bool allowDiscardBlankDraft = true}) async {
-    if (_saving) {
-      return false;
+    final inFlight = _persistInFlight;
+    if (inFlight != null) {
+      final wrote = await inFlight;
+      // Edits can land while a save was running — persist those too.
+      if (_dirty || _isNewDraft) {
+        return (await _persistChanges(
+              allowDiscardBlankDraft: allowDiscardBlankDraft,
+            )) ||
+            wrote;
+      }
+      return wrote || _listNeedsRefresh;
     }
+
+    final run = _persistChangesBody(
+      allowDiscardBlankDraft: allowDiscardBlankDraft,
+    );
+    _persistInFlight = run;
+    try {
+      return await run;
+    } finally {
+      if (identical(_persistInFlight, run)) {
+        _persistInFlight = null;
+      }
+    }
+  }
+
+  Future<bool> _persistChangesBody({
+    required bool allowDiscardBlankDraft,
+  }) async {
     final note = _note;
     if (note == null) {
       return false;
@@ -296,6 +332,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       await repo.delete(note.id);
       _note = null;
       _clearUnlockSession();
+      _listNeedsRefresh = true;
       return true;
     }
 
@@ -342,6 +379,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
       _dirty = false;
       _isNewDraft = false;
+      _listNeedsRefresh = true;
       if (mounted) {
         setState(() {});
       }
@@ -406,6 +444,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             mediaRefs: mediaRefs,
           );
       await ref.read(noteRepositoryProvider).update(note);
+      _listNeedsRefresh = true;
 
       _quillController.document = Document();
       _clearUnlockSession();
@@ -548,6 +587,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         ..folderId = _folderId
         ..tagIds = List<int>.from(_tagIds);
       await ref.read(noteRepositoryProvider).update(note);
+      _listNeedsRefresh = true;
       _clearUnlockSession();
       setState(() {
         _isLocked = false;
@@ -1628,12 +1668,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     final l10n = AppLocalizations.of(context);
     _autosaveTimer?.cancel();
     try {
-      final changed = await _persistChanges();
+      await _persistChanges();
       _clearUnlockSession();
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pop(changed);
+      // Prefer the session flag: a successful autosave already cleared dirty,
+      // so the final persist often returns false even when the list must update.
+      Navigator.of(context).pop(_listNeedsRefresh);
     } catch (_) {
       if (!mounted) {
         return;
