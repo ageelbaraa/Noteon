@@ -36,6 +36,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settings => 'Settings';
 
   @override
+  String get profile => 'Profile';
+
+  @override
+  String get displayName => 'Name';
+
+  @override
+  String get displayNameHint => 'Your name';
+
+  @override
+  String get displayNameEmpty => 'Add your name';
+
+  @override
+  String get editDisplayNameTitle => 'Your name';
+
+  @override
   String get appearance => 'Appearance';
 
   @override

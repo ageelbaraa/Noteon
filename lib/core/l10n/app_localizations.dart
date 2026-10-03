@@ -152,6 +152,36 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get settings;
 
+  /// No description provided for @profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get profile;
+
+  /// No description provided for @displayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get displayName;
+
+  /// No description provided for @displayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get displayNameHint;
+
+  /// No description provided for @displayNameEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your name'**
+  String get displayNameEmpty;
+
+  /// No description provided for @editDisplayNameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get editDisplayNameTitle;
+
   /// No description provided for @appearance.
   ///
   /// In en, this message translates to:

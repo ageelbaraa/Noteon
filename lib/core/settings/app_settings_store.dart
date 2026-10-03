@@ -21,7 +21,7 @@ enum NotePageBackground {
   grid,
 }
 
-/// Local persistence for theme, language, and notes view preferences.
+/// Local persistence for theme, language, profile, and notes view preferences.
 class AppSettingsStore {
   AppSettingsStore(this._prefs);
 
@@ -31,6 +31,8 @@ class AppSettingsStore {
   static const localeKey = 'noteon.locale';
   static const notesViewModeKey = 'noteon.notes_view_mode';
   static const notePageBackgroundKey = 'noteon.note_page_background';
+  static const displayNameKey = 'noteon.display_name';
+  static const maxDisplayNameLength = 40;
 
   AppThemeMode readThemeMode() {
     final raw = _prefs.getString(themeKey);
@@ -98,5 +100,18 @@ class AppSettingsStore {
 
   Future<void> writeNotePageBackground(NotePageBackground mode) {
     return _prefs.setString(notePageBackgroundKey, mode.name);
+  }
+
+  /// User-chosen display name shown in Settings → Profile. Empty when unset.
+  String readDisplayName() {
+    return (_prefs.getString(displayNameKey) ?? '').trim();
+  }
+
+  Future<void> writeDisplayName(String name) {
+    final trimmed = name.trim();
+    final value = trimmed.length > maxDisplayNameLength
+        ? trimmed.substring(0, maxDisplayNameLength)
+        : trimmed;
+    return _prefs.setString(displayNameKey, value);
   }
 }

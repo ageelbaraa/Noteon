@@ -101,3 +101,20 @@ final notePageBackgroundProvider =
     NotifierProvider<NotePageBackgroundNotifier, NotePageBackground>(
   NotePageBackgroundNotifier.new,
 );
+
+/// Local profile display name (persisted). Empty string when unset.
+class DisplayNameNotifier extends Notifier<String> {
+  @override
+  String build() {
+    return ref.watch(appSettingsStoreProvider).readDisplayName();
+  }
+
+  Future<void> setName(String name) async {
+    final store = ref.read(appSettingsStoreProvider);
+    await store.writeDisplayName(name);
+    state = store.readDisplayName();
+  }
+}
+
+final displayNameProvider =
+    NotifierProvider<DisplayNameNotifier, String>(DisplayNameNotifier.new);

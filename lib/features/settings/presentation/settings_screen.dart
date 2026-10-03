@@ -11,7 +11,7 @@ import '../../../shared/widgets/noteon_section_header.dart';
 import '../../app_lock/presentation/app_lock_section.dart';
 import '../../transfer/presentation/backup_transfer_actions.dart';
 
-/// Theme, language, and about — preferences persist locally.
+/// Theme, language, profile, and about — preferences persist locally.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -21,7 +21,9 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeProvider);
     final locale = ref.watch(localeProvider);
+    final displayName = ref.watch(displayNameProvider);
     final packageInfo = ref.watch(packageInfoProvider).valueOrNull;
+    final hasName = displayName.trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -39,8 +41,31 @@ class SettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 40),
           children: [
             NoteonSectionHeader(
-              title: l10n.appearance,
+              title: l10n.profile,
               padding: const EdgeInsets.fromLTRB(4, 12, 4, 10),
+            ),
+            NoteonGroupSurface(
+              children: [
+                NoteonGroupTile(
+                  leading: Icon(
+                    hasName
+                        ? Icons.person_rounded
+                        : Icons.person_add_alt_1_rounded,
+                  ),
+                  title: hasName ? displayName : l10n.displayNameEmpty,
+                  subtitle: l10n.displayName,
+                  trailing: Icon(
+                    Icons.edit_outlined,
+                    size: 20,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  onTap: () => _editDisplayName(context, ref),
+                ),
+              ],
+            ),
+            NoteonSectionHeader(
+              title: l10n.appearance,
+              padding: const EdgeInsets.fromLTRB(4, 24, 4, 10),
             ),
             NoteonGroupSurface(
               children: [
@@ -329,6 +354,72 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+Future<void> _editDisplayName(BuildContext context, WidgetRef ref) async {
+  final current = ref.read(displayNameProvider);
+  final name = await showDialog<String>(
+    context: context,
+    builder: (context) => _EditDisplayNameDialog(initialName: current),
+  );
+  if (name == null || !context.mounted) {
+    return;
+  }
+  await ref.read(displayNameProvider.notifier).setName(name);
+}
+
+class _EditDisplayNameDialog extends StatefulWidget {
+  const _EditDisplayNameDialog({required this.initialName});
+
+  final String initialName;
+
+  @override
+  State<_EditDisplayNameDialog> createState() => _EditDisplayNameDialogState();
+}
+
+class _EditDisplayNameDialogState extends State<_EditDisplayNameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return AlertDialog(
+      title: Text(l10n.editDisplayNameTitle),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.words,
+        maxLength: AppSettingsStore.maxDisplayNameLength,
+        decoration: InputDecoration(
+          hintText: l10n.displayNameHint,
+          labelText: l10n.displayName,
+        ),
+        onSubmitted: (value) => Navigator.pop(context, value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text),
+          child: Text(l10n.save),
+        ),
+      ],
     );
   }
 }

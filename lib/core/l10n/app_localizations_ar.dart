@@ -36,6 +36,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settings => 'الإعدادات';
 
   @override
+  String get profile => 'الملف الشخصي';
+
+  @override
+  String get displayName => 'الاسم';
+
+  @override
+  String get displayNameHint => 'اسمك';
+
+  @override
+  String get displayNameEmpty => 'أضف اسمك';
+
+  @override
+  String get editDisplayNameTitle => 'اسمك';
+
+  @override
   String get appearance => 'المظهر';
 
   @override

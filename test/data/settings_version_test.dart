@@ -61,4 +61,18 @@ void main() {
     await t.scrollUntilVisible(find.text('الإصدار 1.0.0 (البناء 19)'), 300);
     expect(find.text('الإصدار 1.0.0 (البناء 19)'), findsOneWidget);
   });
+
+  testWidgets('profile name can be set and is shown', (t) async {
+    await pump(t, const Locale('en'));
+    expect(find.text('Add your name'), findsOneWidget);
+
+    await t.tap(find.text('Add your name'));
+    await t.pumpAndSettle();
+    await t.enterText(find.byType(TextField), 'Baraa');
+    await t.tap(find.text('Save'));
+    await t.pumpAndSettle();
+
+    expect(find.text('Baraa'), findsOneWidget);
+    expect(find.text('Add your name'), findsNothing);
+  });
 }

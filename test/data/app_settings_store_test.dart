@@ -64,4 +64,23 @@ void main() {
     final reloaded = AppSettingsStore(await SharedPreferences.getInstance());
     expect(reloaded.readNotePageBackground(), NotePageBackground.lined);
   });
+
+  test('persists display name and trims / clamps length', () async {
+    final prefs = await SharedPreferences.getInstance();
+    final store = AppSettingsStore(prefs);
+
+    expect(store.readDisplayName(), isEmpty);
+    await store.writeDisplayName('  Baraa  ');
+    expect(store.readDisplayName(), 'Baraa');
+
+    final long = 'x' * 80;
+    await store.writeDisplayName(long);
+    expect(store.readDisplayName().length, AppSettingsStore.maxDisplayNameLength);
+
+    await store.writeDisplayName('   ');
+    expect(store.readDisplayName(), isEmpty);
+
+    final reloaded = AppSettingsStore(await SharedPreferences.getInstance());
+    expect(reloaded.readDisplayName(), isEmpty);
+  });
 }
