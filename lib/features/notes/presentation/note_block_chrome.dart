@@ -23,8 +23,9 @@ class NoteBlockChrome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final borderColor =
-        selected ? AppColors.teal : Colors.transparent;
+    final isDark = theme.brightness == Brightness.dark;
+    final accent = isDark ? AppColors.tealLight : AppColors.teal;
+    final borderColor = selected ? accent : Colors.transparent;
 
     return DragTarget<int>(
       onWillAcceptWithDetails: (details) => details.data != blockIndex,
@@ -39,7 +40,7 @@ class NoteBlockChrome extends StatelessWidget {
                 height: 3,
                 margin: const EdgeInsets.symmetric(vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.teal,
+                  color: accent,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -47,7 +48,7 @@ class NoteBlockChrome extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: AppRadii.card,
                 border: Border.all(
-                  color: hovering ? AppColors.teal : borderColor,
+                  color: hovering ? accent : borderColor,
                   width: selected || hovering ? 2 : 1,
                 ),
               ),
@@ -67,9 +68,9 @@ class NoteBlockChrome extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             color: theme.colorScheme.surface,
-                            child: const Icon(
+                            child: Icon(
                               Icons.drag_indicator_rounded,
-                              color: AppColors.teal,
+                              color: accent,
                             ),
                           ),
                         ),

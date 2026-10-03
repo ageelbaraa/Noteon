@@ -47,7 +47,8 @@ void main() {
 
     expect(find.text('Noteon'), findsWidgets);
     expect(find.text('No notes yet'), findsOneWidget);
-    expect(find.text('New note'), findsOneWidget);
+    // FAB label + empty-state CTA share the same string.
+    expect(find.text('New note'), findsNWidgets(2));
 
     await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pump();

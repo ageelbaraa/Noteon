@@ -17,30 +17,47 @@ class AppLockSection extends ConsumerWidget {
     final lock = ref.watch(appLockControllerProvider);
     final isPin = lock.method == AppLockMethod.pin;
 
-    return NoteonGroupSurface(
-      children: [
-        SwitchListTile(
-          secondary: const Icon(Icons.lock_outline_rounded),
-          title: Text(l10n.appLockTitle),
-          subtitle: Text(l10n.appLockSubtitle),
-          value: lock.enabled,
-          onChanged: (value) =>
-              value ? _enable(context, ref) : _disable(context, ref),
-        ),
-        if (lock.enabled) ...[
-          FutureBuilder<DeviceAuthCapabilities>(
-            future: ref.read(deviceAuthProvider).capabilities(),
-            builder: (context, snapshot) {
-              if (snapshot.data?.hasBiometrics != true) {
-                return const SizedBox.shrink();
-              }
-              return Column(
-                children: [
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.fingerprint),
-                    title: Text(l10n.appLockUnlockWith),
-                    trailing: SegmentedButton<AppLockMethod>(
+    return FutureBuilder<DeviceAuthCapabilities>(
+      future: ref.read(deviceAuthProvider).capabilities(),
+      builder: (context, snapshot) {
+        final hasBiometrics = snapshot.data?.hasBiometrics == true;
+
+        return NoteonGroupSurface(
+          children: [
+            SwitchListTile(
+              secondary: const Icon(Icons.lock_outline_rounded),
+              title: Text(l10n.appLockTitle),
+              subtitle: Text(l10n.appLockSubtitle),
+              value: lock.enabled,
+              onChanged: (value) =>
+                  value ? _enable(context, ref) : _disable(context, ref),
+            ),
+            if (lock.enabled && hasBiometrics)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: 4,
+                        end: 4,
+                        bottom: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.fingerprint, size: 22),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              l10n.appLockUnlockWith,
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SegmentedButton<AppLockMethod>(
                       showSelectedIcon: true,
                       segments: [
                         ButtonSegment(
@@ -56,21 +73,18 @@ class AppLockSection extends ConsumerWidget {
                       onSelectionChanged: (value) =>
                           _switchMethod(context, ref, value.first),
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
-          if (isPin) ...[
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.pin_outlined),
-              title: Text(l10n.appLockChangePin),
-              onTap: () => _changePin(context, ref),
-            ),
+                  ],
+                ),
+              ),
+            if (lock.enabled && isPin)
+              NoteonGroupTile(
+                leading: const Icon(Icons.pin_outlined),
+                title: l10n.appLockChangePin,
+                onTap: () => _changePin(context, ref),
+              ),
           ],
-        ],
-      ],
+        );
+      },
     );
   }
 

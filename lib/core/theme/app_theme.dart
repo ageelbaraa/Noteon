@@ -149,8 +149,8 @@ abstract final class AppTheme {
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppColors.teal,
-        foregroundColor: Colors.white,
+        backgroundColor: isLight ? AppColors.teal : AppColors.tealLight,
+        foregroundColor: isLight ? Colors.white : AppColors.surfaceDark,
         elevation: 3,
         focusElevation: 4,
         hoverElevation: 4,
@@ -198,13 +198,16 @@ abstract final class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: isLight
-            ? AppColors.teal.withValues(alpha: 0.08)
-            : AppColors.teal.withValues(alpha: 0.18),
-        selectedColor: AppColors.teal.withValues(alpha: 0.22),
+        backgroundColor: AppColors.teal.withValues(alpha: isLight ? 0.08 : 0.22),
+        selectedColor: AppColors.teal.withValues(alpha: isLight ? 0.22 : 0.32),
         disabledColor: colorScheme.surfaceContainerHighest,
-        labelStyle: refinedText.labelMedium,
-        secondaryLabelStyle: refinedText.labelMedium,
+        checkmarkColor: isLight ? AppColors.tealDark : AppColors.tealLight,
+        labelStyle: refinedText.labelMedium?.copyWith(
+          color: isLight ? null : AppColors.tealLight,
+        ),
+        secondaryLabelStyle: refinedText.labelMedium?.copyWith(
+          color: isLight ? AppColors.tealDark : AppColors.tealLight,
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         shape: RoundedRectangleBorder(borderRadius: AppRadii.control),
         side: BorderSide.none,
@@ -229,8 +232,8 @@ abstract final class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.teal,
-          foregroundColor: Colors.white,
+          backgroundColor: isLight ? AppColors.teal : AppColors.tealLight,
+          foregroundColor: isLight ? Colors.white : AppColors.surfaceDark,
           minimumSize: const Size(48, 48),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape: RoundedRectangleBorder(borderRadius: AppRadii.control),

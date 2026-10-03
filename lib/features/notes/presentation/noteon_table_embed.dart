@@ -368,6 +368,10 @@ class _NoteonTableViewState extends State<_NoteonTableView> {
                 child: Text(l10n.cancel),
               ),
               FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                ),
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(l10n.delete),
               ),

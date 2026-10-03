@@ -114,6 +114,14 @@
   "tagActionFailed": "Could not update the tag. Please try again.",
   "tagAlreadyExists": "A tag with this name already exists.",
   "addTag": "Add tag",
+  "noteTagCount": "{count} tags",
+  "@noteTagCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "noteFolder": "Folder",
   "noteTags": "Tags",
   "noFolder": "No folder",
@@ -127,6 +135,8 @@
     }
   },
   "selectAllNotes": "Select all",
+  "enterSelectionMode": "Enter selection mode",
+  "unsavedChanges": "Unsaved changes",
   "notesMovedMessage": "Moved {count} notes",
   "@notesMovedMessage": {
     "placeholders": {

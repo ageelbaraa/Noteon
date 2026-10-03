@@ -297,6 +297,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addTag => 'Add tag';
 
   @override
+  String noteTagCount(int count) {
+    return '$count tags';
+  }
+
+  @override
   String get noteFolder => 'Folder';
 
   @override
@@ -315,6 +320,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectAllNotes => 'Select all';
+
+  @override
+  String get enterSelectionMode => 'Enter selection mode';
+
+  @override
+  String get unsavedChanges => 'Unsaved changes';
 
   @override
   String notesMovedMessage(int count) {

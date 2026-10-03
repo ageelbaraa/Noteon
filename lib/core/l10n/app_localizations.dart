@@ -638,6 +638,12 @@ abstract class AppLocalizations {
   /// **'Add tag'**
   String get addTag;
 
+  /// No description provided for @noteTagCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tags'**
+  String noteTagCount(int count);
+
   /// No description provided for @noteFolder.
   ///
   /// In en, this message translates to:
@@ -673,6 +679,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select all'**
   String get selectAllNotes;
+
+  /// No description provided for @enterSelectionMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter selection mode'**
+  String get enterSelectionMode;
+
+  /// No description provided for @unsavedChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved changes'**
+  String get unsavedChanges;
 
   /// No description provided for @notesMovedMessage.
   ///

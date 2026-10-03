@@ -294,6 +294,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get addTag => 'إضافة وسم';
 
   @override
+  String noteTagCount(int count) {
+    return '$count وسوم';
+  }
+
+  @override
   String get noteFolder => 'المجلد';
 
   @override
@@ -312,6 +317,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get selectAllNotes => 'تحديد الكل';
+
+  @override
+  String get enterSelectionMode => 'الدخول إلى وضع التحديد';
+
+  @override
+  String get unsavedChanges => 'تغييرات غير محفوظة';
 
   @override
   String notesMovedMessage(int count) {

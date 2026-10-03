@@ -139,6 +139,10 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
       return;
     }
 
+    final previousFolderById = <int, int?>{
+      for (final note in toMove) note.id: note.folderId,
+    };
+
     setState(() => _moving = true);
     try {
       await ref.read(noteRepositoryProvider).setFolders(toMove, folderId);
@@ -147,8 +151,37 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
         return;
       }
       _exitSelection();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.notesMovedMessage(toMove.length))),
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.notesMovedMessage(toMove.length)),
+          action: SnackBarAction(
+            label: l10n.undo,
+            onPressed: () async {
+              final byPrevious = <int?, List<Note>>{};
+              for (final note in toMove) {
+                byPrevious
+                    .putIfAbsent(previousFolderById[note.id], () => <Note>[])
+                    .add(note);
+              }
+              try {
+                for (final entry in byPrevious.entries) {
+                  await ref
+                      .read(noteRepositoryProvider)
+                      .setFolders(entry.value, entry.key);
+                }
+                await ref.read(notesListProvider.notifier).refresh();
+              } catch (_) {
+                if (!mounted) {
+                  return;
+                }
+                messenger.showSnackBar(
+                  SnackBar(content: Text(l10n.notesMoveFailed)),
+                );
+              }
+            },
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) {
@@ -319,9 +352,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
           children: [
             _FolderChipStrip(
               folders: roots,
-              allFolders: folders,
               selectedScope: filter.folderScope,
               selectedFolderId: filter.folderId,
+              enabled: !_selecting,
               onAll: () =>
                   ref.read(notesBrowseFilterProvider.notifier).clearFilters(),
               onUnfiled: () =>
@@ -345,6 +378,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                       child: TextField(
                         controller: _searchController,
                         focusNode: _searchFocus,
+                        enabled: !_selecting,
                         textInputAction: TextInputAction.search,
                         decoration: InputDecoration(
                           hintText: l10n.searchNotes,
@@ -353,22 +387,27 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                               ? null
                               : IconButton(
                                   tooltip: l10n.clearFilters,
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    ref
-                                        .read(
-                                          notesBrowseFilterProvider.notifier,
-                                        )
-                                        .setSearchQuery('');
-                                  },
+                                  onPressed: _selecting
+                                      ? null
+                                      : () {
+                                          _searchController.clear();
+                                          ref
+                                              .read(
+                                                notesBrowseFilterProvider
+                                                    .notifier,
+                                              )
+                                              .setSearchQuery('');
+                                        },
                                   icon: const Icon(Icons.clear_rounded),
                                 ),
                         ),
-                        onChanged: (value) {
-                          ref
-                              .read(notesBrowseFilterProvider.notifier)
-                              .setSearchQuery(value);
-                        },
+                        onChanged: _selecting
+                            ? null
+                            : (value) {
+                                ref
+                                    .read(notesBrowseFilterProvider.notifier)
+                                    .setSearchQuery(value);
+                              },
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -383,6 +422,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                       searchQuery: filter.searchQuery.trim().isEmpty
                           ? null
                           : filter.searchQuery.trim(),
+                      enabled: !_selecting,
                       onClear: () {
                         ref
                             .read(notesBrowseFilterProvider.notifier)
@@ -423,13 +463,18 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                         },
                       );
                     }
-                    return const _EmptyNotesState();
+                    return _EmptyNotesState(onCreateNote: _openNewNote);
                   }
+
+                  final searchHighlight = filter.searchQuery.trim().length >= 2
+                      ? filter.searchQuery.trim()
+                      : null;
 
                   final subfoldersHeader = childFolders.isEmpty
                       ? null
                       : _SubfoldersSection(
                           folders: childFolders,
+                          enabled: !_selecting,
                           onOpen: (id) => ref
                               .read(notesBrowseFilterProvider.notifier)
                               .selectFolder(id),
@@ -447,6 +492,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             onLongPressNote: _onNoteLongPress,
                             selectionMode: _selecting,
                             selectedIds: _selectedIds,
+                            highlightQuery: searchHighlight,
                             leading: subfoldersHeader,
                             emptyNotesPlaceholder: totalNotes == 0
                                 ? NoteonEmptyState(
@@ -464,6 +510,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             onLongPressNote: _onNoteLongPress,
                             selectionMode: _selecting,
                             selectedIds: _selectedIds,
+                            highlightQuery: searchHighlight,
                             leading: subfoldersHeader,
                             emptyNotesPlaceholder: totalNotes == 0
                                 ? NoteonEmptyState(
@@ -505,18 +552,18 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
 class _FolderChipStrip extends StatelessWidget {
   const _FolderChipStrip({
     required this.folders,
-    required this.allFolders,
     required this.selectedScope,
     required this.selectedFolderId,
+    required this.enabled,
     required this.onAll,
     required this.onUnfiled,
     required this.onFolder,
   });
 
   final List<Folder> folders;
-  final List<Folder> allFolders;
   final FolderScope selectedScope;
   final int? selectedFolderId;
+  final bool enabled;
   final VoidCallback onAll;
   final VoidCallback onUnfiled;
   final ValueChanged<int> onFolder;
@@ -524,68 +571,62 @@ class _FolderChipStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final children = allFolders
-        .where((f) => f.parentFolderId != null)
-        .toList(growable: false);
+
+    Widget chip({
+      required Widget avatar,
+      required String label,
+      required bool selected,
+      required VoidCallback onTap,
+    }) {
+      return Padding(
+        padding: const EdgeInsetsDirectional.only(end: 8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Center(
+            child: FilterChip(
+              avatar: avatar,
+              label: Text(label),
+              selected: selected,
+              onSelected: enabled ? (_) => onTap() : null,
+              materialTapTargetSize: MaterialTapTargetSize.padded,
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+        ),
+      );
+    }
 
     return SizedBox(
-      height: 48,
+      height: 52,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsetsDirectional.fromSTEB(
           AppSpacing.lg,
-          4,
+          2,
           AppSpacing.lg,
-          8,
+          2,
         ),
         children: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 8),
-            child: FilterChip(
-              avatar: const Icon(Icons.notes_rounded, size: 16),
-              label: Text(l10n.allNotes),
-              selected: selectedScope == FolderScope.all,
-              onSelected: (_) => onAll(),
-              visualDensity: VisualDensity.compact,
-            ),
+          chip(
+            avatar: const Icon(Icons.notes_rounded, size: 16),
+            label: l10n.allNotes,
+            selected: selectedScope == FolderScope.all,
+            onTap: onAll,
           ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 8),
-            child: FilterChip(
-              avatar: const Icon(Icons.inbox_outlined, size: 16),
-              label: Text(l10n.unfiledNotes),
-              selected: selectedScope == FolderScope.unfiled,
-              onSelected: (_) => onUnfiled(),
-              visualDensity: VisualDensity.compact,
-            ),
+          chip(
+            avatar: const Icon(Icons.inbox_outlined, size: 16),
+            label: l10n.unfiledNotes,
+            selected: selectedScope == FolderScope.unfiled,
+            onTap: onUnfiled,
           ),
-          for (final folder in folders) ...[
-            Padding(
-              padding: const EdgeInsetsDirectional.only(end: 8),
-              child: FilterChip(
-                avatar: const Icon(Icons.folder_outlined, size: 16),
-                label: Text(folder.name),
-                selected: selectedScope == FolderScope.folder &&
-                    selectedFolderId == folder.id,
-                onSelected: (_) => onFolder(folder.id),
-                visualDensity: VisualDensity.compact,
-              ),
+          for (final folder in folders)
+            chip(
+              avatar: const Icon(Icons.folder_outlined, size: 16),
+              label: folder.name,
+              selected: selectedScope == FolderScope.folder &&
+                  selectedFolderId == folder.id,
+              onTap: () => onFolder(folder.id),
             ),
-            for (final child in children.where(
-              (c) => c.parentFolderId == folder.id,
-            ))
-              Padding(
-                padding: const EdgeInsetsDirectional.only(end: 8),
-                child: FilterChip(
-                  avatar: const Icon(Icons.subdirectory_arrow_right, size: 16),
-                  label: Text(child.name),
-                  selected: selectedScope == FolderScope.folder &&
-                      selectedFolderId == child.id,
-                  onSelected: (_) => onFolder(child.id),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-          ],
         ],
       ),
     );
@@ -596,10 +637,12 @@ class _SubfoldersSection extends StatelessWidget {
   const _SubfoldersSection({
     required this.folders,
     required this.onOpen,
+    this.enabled = true,
   });
 
   final List<Folder> folders;
   final ValueChanged<int> onOpen;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -618,7 +661,7 @@ class _SubfoldersSection extends StatelessWidget {
                 leading: const Icon(Icons.folder_outlined),
                 title: folder.name,
                 trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => onOpen(folder.id),
+                onTap: enabled ? () => onOpen(folder.id) : null,
               ),
           ],
         ),
@@ -635,6 +678,7 @@ class _NotesListBody extends StatelessWidget {
     required this.onLongPressNote,
     required this.selectionMode,
     required this.selectedIds,
+    this.highlightQuery,
     this.leading,
     this.emptyNotesPlaceholder,
   });
@@ -645,6 +689,7 @@ class _NotesListBody extends StatelessWidget {
   final ValueChanged<Note> onLongPressNote;
   final bool selectionMode;
   final Set<int> selectedIds;
+  final String? highlightQuery;
   final Widget? leading;
   final Widget? emptyNotesPlaceholder;
 
@@ -704,6 +749,7 @@ class _NotesListBody extends StatelessWidget {
                 note: section.notes[i],
                 selected: selectedIds.contains(section.notes[i].id),
                 selectionMode: selectionMode,
+                highlightQuery: highlightQuery,
                 onTap: () => onTapNote(section.notes[i]),
                 onLongPress: () => onLongPressNote(section.notes[i]),
               ),
@@ -723,6 +769,7 @@ class _NotesGridBody extends StatelessWidget {
     required this.onLongPressNote,
     required this.selectionMode,
     required this.selectedIds,
+    this.highlightQuery,
     this.leading,
     this.emptyNotesPlaceholder,
   });
@@ -733,6 +780,7 @@ class _NotesGridBody extends StatelessWidget {
   final ValueChanged<Note> onLongPressNote;
   final bool selectionMode;
   final Set<int> selectedIds;
+  final String? highlightQuery;
   final Widget? leading;
   final Widget? emptyNotesPlaceholder;
 
@@ -804,6 +852,7 @@ class _NotesGridBody extends StatelessWidget {
                   note: note,
                   selected: selectedIds.contains(note.id),
                   selectionMode: selectionMode,
+                  highlightQuery: highlightQuery,
                   onTap: () => onTapNote(note),
                   onLongPress: () => onLongPressNote(note),
                 );
@@ -823,12 +872,14 @@ class _ActiveFiltersBar extends StatelessWidget {
     required this.tagLabel,
     required this.searchQuery,
     required this.onClear,
+    this.enabled = true,
   });
 
   final String? folderLabel;
   final String? tagLabel;
   final String? searchQuery;
   final VoidCallback onClear;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -858,23 +909,27 @@ class _ActiveFiltersBar extends StatelessWidget {
                 avatar: const Icon(Icons.folder_outlined, size: 16),
                 label: Text(folderLabel!),
                 visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.padded,
               ),
             if (tagLabel != null)
               Chip(
                 avatar: const Icon(Icons.label_outline, size: 16),
                 label: Text(tagLabel!),
                 visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.padded,
               ),
             if (queryLabel != null)
               Chip(
                 avatar: const Icon(Icons.search, size: 16),
                 label: Text(queryLabel),
                 visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.padded,
               ),
             ActionChip(
               label: Text(l10n.clearFilters),
-              onPressed: onClear,
+              onPressed: enabled ? onClear : null,
               visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.padded,
             ),
           ],
         ),
@@ -905,7 +960,9 @@ class _FilteredEmptyState extends StatelessWidget {
 }
 
 class _EmptyNotesState extends StatelessWidget {
-  const _EmptyNotesState();
+  const _EmptyNotesState({required this.onCreateNote});
+
+  final VoidCallback onCreateNote;
 
   @override
   Widget build(BuildContext context) {
@@ -914,6 +971,11 @@ class _EmptyNotesState extends StatelessWidget {
       useBrandMark: true,
       title: l10n.emptyNotesTitle,
       subtitle: '${l10n.appTagline}\n\n${l10n.emptyNotesSubtitle}',
+      action: FilledButton.icon(
+        onPressed: onCreateNote,
+        icon: const Icon(Icons.add_rounded),
+        label: Text(l10n.newNote),
+      ),
     );
   }
 }

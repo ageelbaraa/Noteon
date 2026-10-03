@@ -20,7 +20,9 @@ import '../../../core/providers/database_providers.dart';
 import '../../../core/providers/media_providers.dart';
 import '../../../core/providers/settings_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_motion.dart';
 import '../../../shared/navigation/noteon_page_route.dart';
+import '../../../shared/widgets/noteon_empty_state.dart';
 import '../../folders/data/folder.dart';
 import '../../tags/data/tag.dart';
 import '../data/media_ref.dart';
@@ -735,6 +737,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             child: Text(l10n.cancel),
           ),
           FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: Text(l10n.delete),
           ),
@@ -1702,6 +1708,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               child: Text(l10n.cancel),
             ),
             FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
               onPressed: () => Navigator.of(context).pop(true),
               child: Text(l10n.delete),
             ),
@@ -1828,7 +1838,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         backgroundColor: theme.colorScheme.surface,
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
-          toolbarHeight: _writingCompact ? 44 : kToolbarHeight,
+          toolbarHeight: _writingCompact ? 48 : kToolbarHeight,
           leading: IconButton(
             icon: const BackButtonIcon(),
             onPressed: _handlePop,
@@ -1849,16 +1859,21 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   return const SizedBox.shrink();
                 }
                 return Tooltip(
-                  message: l10n.editNote,
-                  child: Padding(
-                    padding: const EdgeInsetsDirectional.only(end: 8),
-                    child: Center(
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: AppColors.teal,
-                          shape: BoxShape.circle,
+                  message: l10n.unsavedChanges,
+                  child: Semantics(
+                    label: l10n.unsavedChanges,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.only(end: 8),
+                      child: Center(
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: theme.brightness == Brightness.dark
+                                ? AppColors.tealLight
+                                : AppColors.teal,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       ),
                     ),
@@ -1966,11 +1981,20 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     if (_loadError != null || _note == null) {
       final message =
           _loadError == 'missing' ? l10n.noteMissing : l10n.noteLoadFailed;
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(message, textAlign: TextAlign.center),
-        ),
+      return NoteonLoadError(
+        message: message,
+        retryLabel: l10n.retry,
+        onRetry: () {
+          if (_loadError == 'missing') {
+            Navigator.of(context).maybePop();
+            return;
+          }
+          setState(() {
+            _loading = true;
+            _loadError = null;
+          });
+          _bootstrap();
+        },
       );
     }
 
@@ -2022,8 +2046,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           ),
         ),
         AnimatedSize(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
+          duration: AppMotion.fast,
+          curve: AppMotion.standard,
           alignment: Alignment.topCenter,
           child: Padding(
             padding: EdgeInsetsDirectional.fromSTEB(
@@ -2032,31 +2056,53 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               12,
               _writingCompact ? 2 : 6,
             ),
-            child: _writingCompact
-                ? Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: ActionChip(
-                      avatar: const Icon(Icons.folder_outlined, size: 16),
-                      label: Text(folderName),
-                      onPressed: () {
-                        _editorFocusNode.unfocus();
-                        _titleFocusNode.unfocus();
-                        _pickFolder(folders);
-                      },
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  )
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        ActionChip(
-                          avatar: const Icon(Icons.folder_outlined, size: 18),
-                          label: Text(folderName),
-                          onPressed: () => _pickFolder(folders),
-                          visualDensity: VisualDensity.compact,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      ActionChip(
+                        avatar: Icon(
+                          Icons.folder_outlined,
+                          size: _writingCompact ? 16 : 18,
                         ),
-                        const SizedBox(width: 8),
+                        label: Text(folderName),
+                        onPressed: () {
+                          if (_writingCompact) {
+                            _editorFocusNode.unfocus();
+                            _titleFocusNode.unfocus();
+                          }
+                          _pickFolder(folders);
+                        },
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.padded,
+                      ),
+                      const SizedBox(width: 8),
+                      if (_writingCompact)
+                        ActionChip(
+                          avatar: Icon(
+                            _tagIds.isEmpty
+                                ? Icons.add_rounded
+                                : Icons.label_outline,
+                            size: 16,
+                          ),
+                          label: Text(
+                            _tagIds.isEmpty
+                                ? l10n.addTag
+                                : l10n.noteTagCount(_tagIds.length),
+                          ),
+                          onPressed: () {
+                            _editorFocusNode.unfocus();
+                            _titleFocusNode.unfocus();
+                            _addTag(tags);
+                          },
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.padded,
+                        )
+                      else ...[
                         for (final tagId in _tagIds) ...[
                           InputChip(
                             label: Text(_tagLabel(tags, tagId)),
@@ -2068,6 +2114,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                               _markDirty();
                             },
                             visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.padded,
                           ),
                           const SizedBox(width: 8),
                         ],
@@ -2076,10 +2124,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                           label: Text(l10n.addTag),
                           onPressed: () => _addTag(tags),
                           visualDensity: VisualDensity.compact,
+                          materialTapTargetSize: MaterialTapTargetSize.padded,
                         ),
                       ],
-                    ),
+                    ],
                   ),
+                ),
+              ),
+            ),
           ),
         ),
         if (_isLocked && !_sessionUnlocked)

@@ -194,31 +194,28 @@ class SettingsScreen extends ConsumerWidget {
             ),
             NoteonGroupSurface(
               children: [
-                ListTile(
+                NoteonGroupTile(
                   leading: const Icon(Icons.upload_file_outlined),
-                  title: Text(l10n.backupExportEncrypted),
-                  subtitle: Text(l10n.backupExportEncryptedSubtitle),
+                  title: l10n.backupExportEncrypted,
+                  subtitle: l10n.backupExportEncryptedSubtitle,
                   onTap: () => BackupTransferActions.exportBackup(context, ref),
                 ),
-                const Divider(height: 1),
-                ListTile(
+                NoteonGroupTile(
                   leading: const Icon(Icons.download_outlined),
-                  title: Text(l10n.backupImportEncrypted),
-                  subtitle: Text(l10n.backupImportEncryptedSubtitle),
+                  title: l10n.backupImportEncrypted,
+                  subtitle: l10n.backupImportEncryptedSubtitle,
                   onTap: () => BackupTransferActions.importBackup(context, ref),
                 ),
-                const Divider(height: 1),
-                ListTile(
+                NoteonGroupTile(
                   leading: const Icon(Icons.qr_code_2_outlined),
-                  title: Text(l10n.nearbySendTitle),
-                  subtitle: Text(l10n.nearbySendSubtitle),
+                  title: l10n.nearbySendTitle,
+                  subtitle: l10n.nearbySendSubtitle,
                   onTap: () => BackupTransferActions.sendNearby(context, ref),
                 ),
-                const Divider(height: 1),
-                ListTile(
+                NoteonGroupTile(
                   leading: const Icon(Icons.qr_code_scanner_outlined),
-                  title: Text(l10n.nearbyReceiveTitle),
-                  subtitle: Text(l10n.nearbyReceiveSubtitle),
+                  title: l10n.nearbyReceiveTitle,
+                  subtitle: l10n.nearbyReceiveSubtitle,
                   onTap: () =>
                       BackupTransferActions.receiveNearby(context, ref),
                 ),
@@ -235,22 +232,20 @@ class SettingsScreen extends ConsumerWidget {
             ),
             NoteonGroupSurface(
               children: [
-                ListTile(
+                NoteonGroupTile(
                   leading: const Icon(Icons.document_scanner_outlined),
-                  title: Text(l10n.privacyOcrTitle),
-                  subtitle: Text(l10n.privacyOcrSubtitle),
+                  title: l10n.privacyOcrTitle,
+                  subtitle: l10n.privacyOcrSubtitle,
                 ),
-                const Divider(height: 1),
-                ListTile(
+                NoteonGroupTile(
                   leading: const Icon(Icons.short_text_rounded),
-                  title: Text(l10n.privacyAssistTitle),
-                  subtitle: Text(l10n.privacyAssistSubtitle),
+                  title: l10n.privacyAssistTitle,
+                  subtitle: l10n.privacyAssistSubtitle,
                 ),
-                const Divider(height: 1),
-                ListTile(
+                NoteonGroupTile(
                   leading: const Icon(Icons.ios_share_outlined),
-                  title: Text(l10n.privacyExportTitle),
-                  subtitle: Text(l10n.privacyExportSubtitle),
+                  title: l10n.privacyExportTitle,
+                  subtitle: l10n.privacyExportSubtitle,
                 ),
               ],
             ),

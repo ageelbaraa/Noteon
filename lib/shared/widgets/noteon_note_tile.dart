@@ -15,6 +15,7 @@ class NoteonNoteTile extends StatelessWidget {
     this.onLongPress,
     this.selected = false,
     this.selectionMode = false,
+    this.highlightQuery,
   });
 
   final Note note;
@@ -22,6 +23,7 @@ class NoteonNoteTile extends StatelessWidget {
   final VoidCallback? onLongPress;
   final bool selected;
   final bool selectionMode;
+  final String? highlightQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +40,18 @@ class NoteonNoteTile extends StatelessWidget {
         ? l10n.lockedNotePreview
         : NoteContentCodec.plainTextPreview(note.contentJson);
     final previewText = preview.isEmpty ? l10n.emptyNotePreview : preview;
+    final titleStyle = theme.textTheme.titleMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.2,
+      height: 1.25,
+      color: selected ? accent : null,
+    );
 
     return Semantics(
+      label: title,
       selected: selectionMode ? selected : null,
       button: true,
+      onLongPressHint: selectionMode ? null : l10n.enterSelectionMode,
       child: Material(
         color: selected
             ? AppColors.teal.withValues(alpha: isDark ? 0.22 : 0.12)
@@ -91,16 +101,11 @@ class NoteonNoteTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
+                        _HighlightedTitle(
+                          title: title,
+                          query: highlightQuery,
+                          style: titleStyle,
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                            height: 1.25,
-                            color: selected ? accent : null,
-                          ),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -183,6 +188,7 @@ class NoteonNoteGridCard extends StatelessWidget {
     this.onLongPress,
     this.selected = false,
     this.selectionMode = false,
+    this.highlightQuery,
   });
 
   final Note note;
@@ -190,6 +196,7 @@ class NoteonNoteGridCard extends StatelessWidget {
   final VoidCallback? onLongPress;
   final bool selected;
   final bool selectionMode;
+  final String? highlightQuery;
 
   @override
   Widget build(BuildContext context) {
@@ -206,10 +213,18 @@ class NoteonNoteGridCard extends StatelessWidget {
         ? l10n.lockedNotePreview
         : NoteContentCodec.plainTextPreview(note.contentJson);
     final previewText = preview.isEmpty ? l10n.emptyNotePreview : preview;
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.2,
+      height: 1.25,
+      color: selected ? accent : null,
+    );
 
     return Semantics(
+      label: title,
       selected: selectionMode ? selected : null,
       button: true,
+      onLongPressHint: selectionMode ? null : l10n.enterSelectionMode,
       child: Material(
         color: selected
             ? AppColors.teal.withValues(alpha: isDark ? 0.22 : 0.12)
@@ -248,16 +263,11 @@ class NoteonNoteGridCard extends StatelessWidget {
                         const SizedBox(width: 8),
                       ],
                       Expanded(
-                        child: Text(
-                          title,
+                        child: _HighlightedTitle(
+                          title: title,
+                          query: highlightQuery,
+                          style: titleStyle,
                           maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                            height: 1.25,
-                            color: selected ? accent : null,
-                          ),
                         ),
                       ),
                       if (note.isLocked)
@@ -294,6 +304,68 @@ class NoteonNoteGridCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HighlightedTitle extends StatelessWidget {
+  const _HighlightedTitle({
+    required this.title,
+    required this.style,
+    required this.maxLines,
+    this.query,
+  });
+
+  final String title;
+  final String? query;
+  final TextStyle? style;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final q = query?.trim();
+    if (q == null || q.length < 2) {
+      return Text(
+        title,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+
+    final lowerTitle = title.toLowerCase();
+    final lowerQuery = q.toLowerCase();
+    final index = lowerTitle.indexOf(lowerQuery);
+    if (index < 0) {
+      return Text(
+        title,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+
+    final end = index + q.length;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Text.rich(
+      TextSpan(
+        style: style,
+        children: [
+          if (index > 0) TextSpan(text: title.substring(0, index)),
+          TextSpan(
+            text: title.substring(index, end),
+            style: style?.copyWith(
+              backgroundColor: AppColors.teal.withValues(
+                alpha: isDark ? 0.35 : 0.22,
+              ),
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (end < title.length) TextSpan(text: title.substring(end)),
+        ],
+      ),
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
