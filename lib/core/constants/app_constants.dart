@@ -2,7 +2,6 @@
 abstract final class AppConstants {
   static const String appName = 'Noteon';
   static const String packageName = 'com.noteon.app';
-  static const String appVersion = '1.0.0';
 
   /// Isar instance name.
   static const String databaseName = 'noteon';

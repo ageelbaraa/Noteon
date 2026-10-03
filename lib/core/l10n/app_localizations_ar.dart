@@ -67,8 +67,8 @@ class AppLocalizationsAr extends AppLocalizations {
       'Noteon تطبيق ملاحظات بسيط وآمن يحفظ بياناتك محلياً على جهازك.';
 
   @override
-  String versionLabel(String version) {
-    return 'الإصدار $version';
+  String versionBuildLabel(String version, String build) {
+    return 'الإصدار $version (البناء $build)';
   }
 
   @override

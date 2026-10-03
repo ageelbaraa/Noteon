@@ -67,8 +67,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Noteon is a simple and secure notes app that keeps your data locally on your device.';
 
   @override
-  String versionLabel(String version) {
-    return 'Version $version';
+  String versionBuildLabel(String version, String build) {
+    return 'Version $version (build $build)';
   }
 
   @override
