@@ -26,6 +26,8 @@ Firebase project `noteon-app` remains linked for App Distribution only. **No bil
 
 **Limits:** Uses GitHub Actions minutes (unlimited for public repos; private repos have a free monthly quota). Emulator ≠ OEM hardware / IME “feel”.
 
+**Emulator boot note:** Test runs use `-no-snapshot-load` (cold boot) and one automatic retry. Quickboot snapshots can report `sys.boot_completed` before the Android `input` service is up, which makes `android-emulator-runner` fail on `adb shell input keyevent 82` before tests start ([ReactiveCircus/android-emulator-runner#432](https://github.com/ReactiveCircus/android-emulator-runner/issues/432)).
+
 ## Architecture (current)
 
 ```

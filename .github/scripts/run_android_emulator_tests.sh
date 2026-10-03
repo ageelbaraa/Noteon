@@ -8,6 +8,18 @@ mkdir -p build/ci
 : > build/ci/emulator_tests.stderr
 code=0
 
+# Defense in depth: wait until package manager / input are usable even if the
+# runner already reported boot_completed (snapshot / service race).
+emu_serial="${ANDROID_SERIAL:-emulator-5554}"
+echo "Waiting for emulator services on ${emu_serial}..." | tee -a build/ci/emulator_tests.stderr
+for _ in $(seq 1 60); do
+  if adb -s "$emu_serial" shell 'service check package' 2>/dev/null | grep -q 'found'; then
+    break
+  fi
+  sleep 2
+done
+adb -s "$emu_serial" shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 1; done' >/dev/null 2>&1 || true
+
 shopt -s nullglob
 tests=(integration_test/*_test.dart)
 if [ ${#tests[@]} -eq 0 ]; then

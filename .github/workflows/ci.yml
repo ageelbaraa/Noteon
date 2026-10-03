@@ -239,32 +239,63 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ env.EMULATOR_API_LEVEL }}-${{ env.EMULATOR_TARGET }}-${{ env.EMULATOR_ARCH }}-v1
+          # v2: invalidate snapshots that report boot_completed before the
+          # input service is up (android-emulator-runner keyevent 82 race).
+          key: avd-${{ env.EMULATOR_API_LEVEL }}-${{ env.EMULATOR_TARGET }}-${{ env.EMULATOR_ARCH }}-v2
 
       - name: Create AVD snapshot (cache miss only)
         if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: reactivecircus/android-emulator-runner@v2.38.0
         with:
           api-level: ${{ env.EMULATOR_API_LEVEL }}
           target: ${{ env.EMULATOR_TARGET }}
           arch: ${{ env.EMULATOR_ARCH }}
           force-avd-creation: false
+          emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
           script: echo "AVD snapshot ready for cache"
 
+      # Cold-boot test runs (-no-snapshot-load): quickboot snapshots often set
+      # sys.boot_completed before the input service is published, and
+      # android-emulator-runner then fails on `adb shell input keyevent 82`
+      # before our test script starts (ReactiveCircus/android-emulator-runner#432).
       - name: Run Flutter integration tests on emulator
         id: emu-tests
-        uses: reactivecircus/android-emulator-runner@v2
+        continue-on-error: true
+        uses: reactivecircus/android-emulator-runner@v2.38.0
         with:
           api-level: ${{ env.EMULATOR_API_LEVEL }}
           target: ${{ env.EMULATOR_TARGET }}
           arch: ${{ env.EMULATOR_ARCH }}
           force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-boot-timeout: 900
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           # Single command: android-emulator-runner runs each script line via sh -c.
           script: bash .github/scripts/run_android_emulator_tests.sh
+
+      - name: Retry Flutter integration tests on emulator
+        id: emu-tests-retry
+        if: steps.emu-tests.outcome == 'failure'
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: ${{ env.EMULATOR_API_LEVEL }}
+          target: ${{ env.EMULATOR_TARGET }}
+          arch: ${{ env.EMULATOR_ARCH }}
+          force-avd-creation: false
+          emulator-boot-timeout: 900
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash .github/scripts/run_android_emulator_tests.sh
+
+      - name: Fail if emulator tests failed
+        if: >
+          steps.emu-tests.outcome == 'failure' &&
+          steps.emu-tests-retry.outcome != 'success'
+        run: |
+          echo "::error::Android emulator integration failed after retry"
+          exit 1
 
       - name: Upload emulator artifacts
         if: always()
